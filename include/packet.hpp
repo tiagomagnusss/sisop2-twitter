@@ -21,7 +21,7 @@ typedef enum
 	//NOTIFICATION,
 } EventType;
 
-typedef struct __packet
+typedef struct packet
 {
 	EventType type; 									//Tipo do pacote
 	uint16_t seqn; 									//Número de sequência

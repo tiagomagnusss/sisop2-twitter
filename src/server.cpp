@@ -44,9 +44,11 @@ int Server::read_conn(int socket, packet* pkt)
 {
 	bzero(pkt, sizeof(*pkt));
 	int n = read(socket, pkt, sizeof(*pkt));
+
+	std::cout << "Just read a packet" << std::endl;
 	if (n < 0) printf("Couldn't read packet from socket %i", socket);
 
-	return 0;
+	return n;
 }
 
 std::string Server::get_addr()
@@ -80,6 +82,7 @@ int main(int argc, char *argv[])
 		// aceita as conexões
 		int sockets = srv.accept_conn();
 
+		std::cout << "Accepted new socket connection: " << sockets << std::endl;
 		// cria uma thread pra lidar com cada client
 		pthread_t client_thread;
 		pthread_create(&client_thread, NULL, init_reader_thread, &sockets);
@@ -96,18 +99,22 @@ int main(int argc, char *argv[])
 
 void* init_reader_thread(void* args)
 {
-	int sockfd = *((int*) args);
+	int socket = *((int*) args);
 	packet pkt;
 	std::string x = "!";
 
-	srv.read_conn(sockfd, &pkt);
+	while(true)
+	{
+		int n = srv.read_conn(socket, &pkt);
 
-	// TODO: verificar todos os tipos e tomar as devidas ações
-	if ( pkt.type == LOGIN ) x = "L";
+		// TODO: verificar todos os tipos e tomar as devidas ações
+		std::cout << "Payload size: " << pkt.length << std::endl;
+		std::cout << "Received package with payload: " << pkt.payload << std::endl;
 
-	std::cout << "Received package of type " << x << std::endl;
+		if ( n <= 0 ) break;
+	}
 
-	close(sockfd);
-
+	printf("exiting reader thread...");
+	close(socket);
 	return NULL;
 }

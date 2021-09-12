@@ -30,6 +30,8 @@ class Server {
 		int read_conn(int socket, packet* pkt);
 
 		~Server(){
+			printf("k");
+			close(sockfd);
 			// destroy all connections
 			// save information
 		};
