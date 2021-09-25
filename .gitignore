@@ -51,6 +51,6 @@ Module.symvers
 Mkfile.old
 dkms.conf
 
-# Exe files
-client
-server
+# bin obj folder
+bin/
+obj/
