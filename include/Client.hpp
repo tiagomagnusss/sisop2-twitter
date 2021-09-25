@@ -1,7 +1,7 @@
 #ifndef CLIENT_HPP
 #define CLIENT_HPP
 
-#include "packet.hpp"
+#include "Packet.hpp"
 
 #include <iostream>
 #include <list>
@@ -41,7 +41,7 @@ public:
 	~Client()
 	{
 		//printf("kx");
-		close(sockfd);
+		close(_sockfd);
 
 		// destroy all connections
 	};
@@ -51,7 +51,7 @@ private:
 	int _connect();
 	void _disconnect();
 
-	int sockfd;
+	int _sockfd;
 	std::string _server_address, _server_port;
 };
 

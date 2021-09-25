@@ -1,10 +1,10 @@
-#include "../include/client.hpp"
+#include "../include/Client.hpp"
 
 int Client::_create()
 {
-	sockfd = socket(AF_INET, SOCK_STREAM, 0);
+	_sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
-	if (sockfd < 0)
+	if (_sockfd < 0)
 	{
 		fprintf(stderr, "Erro ao criar o socket.\n");
 		exit(GENERAL_ERROR);
@@ -31,7 +31,7 @@ int Client::_connect()
 	server_socket.sin_addr = *((struct in_addr *)server->h_addr);
 	bzero(&(server_socket.sin_zero), 8);
 
-	if (connect(sockfd, (struct sockaddr *)&server_socket, sizeof(server_socket)) < 0)
+	if (connect(_sockfd, (struct sockaddr *)&server_socket, sizeof(server_socket)) < 0)
 	{
 		fprintf(stderr, "Impossível conectar ao servidor %s:%s.\n", _server_address.c_str(), _server_port.c_str());
 		exit(GENERAL_ERROR);
@@ -42,7 +42,7 @@ int Client::_connect()
 
 void Client::_disconnect()
 {
-	close(sockfd);
+	close(_sockfd);
 }
 
 void Client::close_conn()
@@ -53,8 +53,8 @@ void Client::close_conn()
 
 int Client::init_conn(std::string server_address, std::string server_port)
 {
-	this->_server_address = server_address;
-	this->_server_port = server_port;
+	_server_address = server_address;
+	_server_port = server_port;
 
 	_create();
 
@@ -66,16 +66,16 @@ int Client::init_conn(std::string server_address, std::string server_port)
 int Client::read_conn(packet *pkt)
 {
 	bzero(pkt, sizeof(*pkt));
-	int n = read(sockfd, pkt, sizeof(*pkt));
+	int n = read(_sockfd, pkt, sizeof(*pkt));
 	if (n < 0)
-		printf("Couldn't read packet from socket %i", sockfd);
+		printf("Couldn't read packet from socket %i", _sockfd);
 
 	return 0;
 }
 
 int Client::write_conn(packet pkt)
 {
-	int n = write(sockfd, &pkt, sizeof(pkt));
+	int n = write(_sockfd, &pkt, sizeof(pkt));
 	if (n < 0)
 		printf("Couldn't write packet to server");
 

@@ -1,4 +1,4 @@
-#include "../include/packet.hpp"
+#include "../include/Packet.hpp"
 
 #include <cstring>
 

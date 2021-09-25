@@ -11,13 +11,13 @@ DEBUGF := $(if $(DEBUG),-g -ggdb3)
 
 all: client server
 
-CLIENT_DEPS += $(OBJ_DIR)/client.o
-CLIENT_DEPS += $(OBJ_DIR)/packet.o
+CLIENT_DEPS += $(OBJ_DIR)/Client.o
+CLIENT_DEPS += $(OBJ_DIR)/Packet.o
 client: $(CLIENT_DEPS)
 	$(CC) $(DEBUGF) -o $(BIN_DIR)/$@ $^ $(CFLAGS)
 
-SERVER_DEPS += $(OBJ_DIR)/server.o
-SERVER_DEPS += $(OBJ_DIR)/packet.o
+SERVER_DEPS += $(OBJ_DIR)/Server.o
+SERVER_DEPS += $(OBJ_DIR)/Packet.o
 server: $(SERVER_DEPS)
 	$(CC) $(DEBUGF) -o $(BIN_DIR)/$@ $^ $(CFLAGS)
 

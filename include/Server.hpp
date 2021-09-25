@@ -1,7 +1,7 @@
 #ifndef SERVER_HPP
 #define SERVER_HPP
 
-#include "packet.hpp"
+#include "Packet.hpp"
 
 #include <iostream>
 #include <list>

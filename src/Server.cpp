@@ -1,4 +1,4 @@
-#include "../include/server.hpp"
+#include "../include/Server.hpp"
 
 int Server::_create()
 {
