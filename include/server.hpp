@@ -20,30 +20,32 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-class Server {
-	public:
-		Server(){};
+class Server
+{
+public:
+	Server(){};
 
-		void init();
-		std::string get_addr();
-		int accept_conn();
-		int read_conn(int socket, packet* pkt);
+	void init();
+	std::string get_addr();
+	int accept_conn();
+	int read_conn(int socket, packet *pkt);
 
-		~Server(){
-			printf("k");
-			close(sockfd);
-			// destroy all connections
-			// save information
-		};
+	~Server()
+	{
+		printf("k");
+		close(sockfd);
+		// destroy all connections
+		// save information
+	};
 
-	private:
-		int _create();
-		int _bind();
-		int _listen();
+private:
+	int _create();
+	int _bind();
+	int _listen();
 
-		std::string ip = "127.0.0.1";
-		std::string port = "4000";
-		int sockfd;
+	std::string ip = "127.0.0.1";
+	std::string port = "4000";
+	int sockfd;
 };
 
 #endif

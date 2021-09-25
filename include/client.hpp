@@ -22,28 +22,37 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 
-class Client {
-	public:
-		Client(){};
+#define INVALID_CALL 1
+#define INVALID_PROFILE 2
+#define INVALID_SERVER 3
+#define INVALID_PORT 3
+#define GENERAL_ERROR 4
 
-		int init_conn();
-		int write_conn(packet pkt);
-		int read_conn(packet* pkt);
-		void close_conn();
+class Client
+{
+public:
+	Client(){};
 
-		~Client(){
-			printf("kx");
-			close(sockfd);
+	int init_conn(std::string server_address, std::string server_port);
+	int write_conn(packet pkt);
+	int read_conn(packet *pkt);
+	void close_conn();
 
-			// destroy all connections
-		};
+	~Client()
+	{
+		//printf("kx");
+		close(sockfd);
 
-	private:
-		int _create();
-		int _connect(std::string ip, std::string port);
-		void _disconnect();
+		// destroy all connections
+	};
 
-		int sockfd;
+private:
+	int _create();
+	int _connect();
+	void _disconnect();
+
+	int sockfd;
+	std::string _server_address, _server_port;
 };
 
 #endif

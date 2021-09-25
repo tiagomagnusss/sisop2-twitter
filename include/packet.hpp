@@ -23,11 +23,11 @@ typedef enum
 
 typedef struct packet
 {
-	EventType type; 									//Tipo do pacote
-	uint16_t seqn; 									//Número de sequência
-	uint16_t length; 									//Comprimento do payload
-	uint16_t timestamp; 								//Timestamp do dado
-	char payload[MAX_MESSAGE_SIZE]; 				//Dados da mensagem
+	EventType type;					//Tipo do pacote
+	uint16_t seqn;					//Número de sequência
+	uint16_t length;				//Comprimento do payload
+	uint16_t timestamp;				//Timestamp do dado
+	char payload[MAX_MESSAGE_SIZE]; //Dados da mensagem
 } packet;
 
 packet create_packet(EventType type, uint16_t seqn, uint16_t timestamp, std::string payload);
