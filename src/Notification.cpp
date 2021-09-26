@@ -1,4 +1,4 @@
-#include "../include/Notification.hpp"
+#include "../include/Notification.h"
 
 // Identificadores únicos
 std::atomic<uint32_t> NOTIFICATION_ID(0);

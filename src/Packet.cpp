@@ -1,17 +1,15 @@
-#include "../include/Packet.hpp"
+#include "../include/Packet.h"
 
-#include <cstring>
-
-packet create_packet(EventType type, uint16_t seqn, uint16_t timestamp, std::string payload)
+Packet createPacket(PacketType type, uint16_t sequenceNumber, uint16_t timestamp, std::string payload)
 {
-	packet pkt;
-	pkt.type = type;
-	pkt.seqn = seqn;
-	pkt.timestamp = timestamp;
+    Packet packet;
+    packet.type = type;
+    packet.sequenceNumber = sequenceNumber;
+    packet.timestamp = timestamp;
 
-	memset(pkt.payload, 0, MAX_MESSAGE_SIZE);
-	strcpy(pkt.payload, payload.c_str());
-	pkt.length = sizeof(pkt.payload);
+    memset(packet.payload, 0, MAX_MESSAGE_SIZE);
+    strcpy(packet.payload, payload.c_str());
+    packet.payloadLength = sizeof(packet.payload);
 
-	return pkt;
+    return packet;
 }
