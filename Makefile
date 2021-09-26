@@ -9,16 +9,18 @@ DEBUGF := $(if $(DEBUG),-g -ggdb3)
 
 .PHONY: all clean
 
-all: client server
+all: app_client app_server
 
 CLIENT_DEPS += $(OBJ_DIR)/Client.o
 CLIENT_DEPS += $(OBJ_DIR)/Packet.o
-client: $(CLIENT_DEPS)
+CLIENT_DEPS += $(OBJ_DIR)/Communication.o
+app_client: $(CLIENT_DEPS)
 	$(CC) $(DEBUGF) -o $(BIN_DIR)/$@ $^ $(CFLAGS)
 
 SERVER_DEPS += $(OBJ_DIR)/Server.o
 SERVER_DEPS += $(OBJ_DIR)/Packet.o
-server: $(SERVER_DEPS)
+SERVER_DEPS += $(OBJ_DIR)/Communication.o
+app_server: $(SERVER_DEPS)
 	$(CC) $(DEBUGF) -o $(BIN_DIR)/$@ $^ $(CFLAGS)
 
 clean:

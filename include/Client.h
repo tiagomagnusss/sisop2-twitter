@@ -12,6 +12,7 @@
 #define GENERAL_ERROR 8
 
 #include "Packet.h"
+#include "Communication.h"
 #include <iostream>
 #include <list>
 #include <netinet/in.h>
@@ -25,15 +26,17 @@
 class Client
 {
 private:
+    std::string _profile;
     int _socketDescriptor;
 
     int createSocket();
     int connectToServer(std::string serverAddress, std::string serverPort);
 
 public:
-    Client(std::string serverAddress, std::string serverPort);
+    Client(std::string profile, std::string serverAddress, std::string serverPort);
     ~Client();
-    int sendPacket(Packet packet);
+    int login();
+    int logoff();
 };
 
 #endif

@@ -76,29 +76,16 @@ void Server::startServing()
     while (true)
     {
         int connectionSocketDescriptor = acceptConnection();
+        std::cout << "New connection received!\n";
         pthread_t clientThread;
         pthread_create(&clientThread, NULL,
                        commandReceiverThread,
                        &connectionSocketDescriptor);
         threadList.push_back(clientThread);
-        std::cout << "New connection received!\n";
     }
 
     for (pthread_t thread : threadList)
         pthread_join(thread, NULL);
-}
-
-int Server::receivePacket(int socketDescriptor, Packet *packet)
-{
-    bzero(packet, sizeof(*packet));
-    int bytesRead = read(socketDescriptor, packet, sizeof(*packet));
-
-    if (bytesRead < 0)
-    {
-        fprintf(stderr, "An error occured while trying to read packet received from socket %i", socketDescriptor);
-    }
-
-    return bytesRead;
 }
 
 int main(int argc, char *argv[])
@@ -124,15 +111,27 @@ void *commandReceiverThread(void *args)
 {
     int socketDescriptor = *((int *)args);
     Packet packet;
-
+    
     while (true)
     {
-        int bytesRead = Server::receivePacket(socketDescriptor, &packet);
+        int bytesRead = Communication::receivePacket(socketDescriptor, &packet);
 
         if (bytesRead > 0)
         {
-            std::cout << "Payload size: " << packet.payloadLength << std::endl;
-            std::cout << "Received package with payload: " << packet.payload << std::endl;
+            //std::cout << "Payload size: " << packet.payloadLength << std::endl;
+            std::cout << "Received package with payload: (" << getPacketTypeName(packet.type) << ") " << packet.payload << std::endl;
+
+            if (packet.type == LOGIN)
+            {
+                Packet replyPacket = createPacket(REPLY_LOGIN, 0, time(0), "Login OK!");
+                std::cout << "Approved login of " << packet.payload << " on socket " << socketDescriptor << std::endl;
+                Communication::sendPacket(socketDescriptor, replyPacket);
+            }
+
+            if (packet.type == LOGOFF)
+            {
+                std::cout << "Profile " << packet.payload << " logged off (socket " << socketDescriptor << ")" << std::endl;
+            }
         }
     }
     close(socketDescriptor);

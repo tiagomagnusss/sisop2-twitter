@@ -7,6 +7,7 @@
 #define FAILURE_ACCEPT 4
 
 #include "Packet.h"
+#include "Communication.h"
 #include <iostream>
 #include <list>
 #include <netinet/in.h>
@@ -29,8 +30,7 @@ private:
 public:
     Server(int port, int maxConnections);
     ~Server();
-    void startServing();    
-    static int receivePacket(int socket, Packet *packet);
+    void startServing();
 };
 
 void *commandReceiverThread(void *args);

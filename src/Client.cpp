@@ -1,7 +1,8 @@
 #include "../include/Client.h"
 
-Client::Client(std::string serverAddress, std::string serverPort)
+Client::Client(std::string profile, std::string serverAddress, std::string serverPort)
 {
+    _profile = profile;
     createSocket();
     connectToServer(serverAddress, serverPort);
 }
@@ -48,29 +49,68 @@ int Client::connectToServer(std::string serverAddress, std::string serverPort)
     return 0;
 }
 
-int Client::sendPacket(Packet packet)
+int Client::login()
 {
-    int bytesWritten = write(_socketDescriptor, &packet, sizeof(packet));
-    if (bytesWritten < 0)
+    Packet packet;
+
+    while (true)
     {
-        fprintf(stderr, "An error occured while trying to write packet to socket %i", _socketDescriptor);
+        packet = createPacket(LOGIN, 0, time(0), _profile);
+        int bytesWritten = Communication::sendPacket(_socketDescriptor, packet);
+        std::cout << "Logging in as " << packet.payload << " ... ";
+
+        if (bytesWritten > 0)
+        {
+            std::cout << "Login packet sent." << std::endl;
+            break;
+        }
     }
-    return bytesWritten;
+
+    while (true)
+    {
+        int bytesRead = Communication::receivePacket(_socketDescriptor, &packet);
+
+        if (bytesRead > 0)
+        {
+            std::cout << "Server response: " << packet.payload << std::endl;
+            break;
+        }
+    }
+    return 0;
+}
+
+int Client::logoff()
+{
+    Packet packet;
+
+    while (true)
+    {
+        packet = createPacket(LOGOFF, 0, time(0), _profile);
+        std::cout << "Logging off " << packet.payload << " ... ";
+        int bytesWritten = Communication::sendPacket(_socketDescriptor, packet);
+        if (bytesWritten > 0)
+        {
+            std::cout << "OK!" << std::endl;
+            break;
+        }
+    }
+    return 0;
+    close(_socketDescriptor);
 }
 
 int main(int argc, char *argv[])
 {
-    char regexProfile[] = "@[a-zA-Z0-9_]{3,20}";
-    char regexPort[] = "[0-9]{1,5}";
-    std::string profile(argv[1]);
-    std::string serverAddress(argv[2]);
-    std::string serverPort(argv[3]);
-
     if (argc != 4)
     {
         fprintf(stderr, "Invalid call. Usage: ./app_client @<profile> <server> <port>\n");
         exit(INVALID_CALL);
     }
+
+    char regexProfile[] = "@[a-zA-Z0-9_]{3,20}";
+    char regexPort[] = "[0-9]{1,5}";
+    std::string profile(argv[1]);
+    std::string serverAddress(argv[2]);
+    std::string serverPort(argv[3]);
 
     if (!std::regex_match(profile, std::regex(regexProfile)))
     {
@@ -84,32 +124,11 @@ int main(int argc, char *argv[])
         exit(INVALID_PORT);
     }
 
-    Client client(serverAddress, serverPort);
+    Client client(profile, serverAddress, serverPort);
 
-    std::cout << ("Type a command: \n");
+    client.login();
 
-    // espera os comandos
-    Packet packet;
-    while (true)
-    {
-        // lê input do user
-        std::string message;
-        std::getline(std::cin, message);
-
-        // se estiver vazio ignora
-        if (message.empty())
-            continue;
-
-        // envia pro server
-        packet = createPacket(LOGIN, 0, 1234, message);
-        std::cout << packet.payload << std::endl;
-        client.sendPacket(packet);
-
-        // Espera a resposta do servidor
-        //cli.read_conn(&pkt);
-        //std::cout << "Received reply from server: \n" << pkt.payload << std::endl;
-    }
+    client.logoff();
 
     return 0;
 }
-
