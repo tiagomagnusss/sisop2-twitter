@@ -27,16 +27,24 @@ class Client
 {
 private:
     std::string _profile;
-    int _socketDescriptor;
+    int _cmdSocketDescriptor;
+    int _ntfSocketDescriptor;
 
     int createSocket();
-    int connectToServer(std::string serverAddress, std::string serverPort);
+    int connectToServer(int socketId, std::string serverAddress, std::string serverPort);
 
 public:
-    Client(std::string profile, std::string serverAddress, std::string serverPort);
+    Client();
     ~Client();
+    void init(std::string profile, std::string serverAddress, std::string serverPort);
     int login();
     int logoff();
+
+    int read_pkt(int socketId, Packet *packet);
+    int write_pkt(int socketId, Packet packet);
+    int get_ntf_socket();
+    int get_cmd_socket();
+
 };
 
 #endif
