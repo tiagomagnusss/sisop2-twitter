@@ -2,6 +2,7 @@
 #include <csignal>
 
 bool interrupted = false;
+char _regexProfile[20] = "@[a-zA-Z0-9_]{3,20}";
 void* ntf_thread(void* args);
 void* cmd_thread(void* args);
 
@@ -10,7 +11,6 @@ void sigint_handler(int signum)
     std::cout << "Interrupt received" << std::endl;
     interrupted = true;
 }
-
 
 Client::Client()
 {}
@@ -139,13 +139,12 @@ int main(int argc, char *argv[])
         exit(INVALID_CALL);
     }
 
-    char regexProfile[] = "@[a-zA-Z0-9_]{3,20}";
     char regexPort[] = "[0-9]{1,5}";
     std::string profile(argv[1]);
     std::string serverAddress(argv[2]);
     std::string serverPort(argv[3]);
 
-    if (!std::regex_match(profile, std::regex(regexProfile)))
+    if ( !std::regex_match(profile, std::regex(_regexProfile)) )
     {
         fprintf(stderr, "Invalid profile name. It must begin with @ followed by 3-19 alphanumeric characters or underline (_).\n");
         exit(INVALID_PROFILE);
@@ -159,6 +158,7 @@ int main(int argc, char *argv[])
 
     cli.init(profile, serverAddress, serverPort);
     signal(SIGINT, sigint_handler);
+
     cli.login();
 
     pthread_t ntf_thd, cmd_thd;
@@ -256,13 +256,32 @@ std::pair<PacketType, std::string> splitMessage(std::string input)
 
     if ( strncmp( input.c_str(), send.c_str(), send.size() ) == 0 )
     {
-        result.first = SEND;
-        result.second = input.substr( send.size() + 1 );
+        std::string message = input.substr( send.size() + 1 );
+        if ( message.size() > 128 )
+        {
+            result.first = ERROR;
+            result.second = "Character count is greater than 128\n";
+        }
+        else
+        {
+            result.first = SEND;
+            result.second = message;
+        }
     }
-    else if ( strncmp(input.c_str(), send.c_str(), send.size() ) ==0 )
+    else if ( strncmp(input.c_str(), follow.c_str(), follow.size() ) ==0 )
     {
-        result.first = FOLLOW;
-        result.second = input.substr( follow.size() + 1 );
+        std::string profile = input.substr( follow.size() + 1 );
+
+        if ( !std::regex_match(profile, std::regex(_regexProfile)) )
+        {
+            result.first = ERROR;
+            result.second = "Invalid profile name. It must begin with @ followed by 3-19 alphanumeric characters or underline (_).\n";
+        }
+        else
+        {
+            result.first = FOLLOW;
+            result.second = input.substr( follow.size() + 1 );
+        }
     }
     else
     {

@@ -8,6 +8,7 @@
 
 #include "Packet.h"
 #include "Communication.h"
+#include "Profile.h"
 #include <iostream>
 #include <list>
 #include <netinet/in.h>
@@ -16,6 +17,7 @@
 #include <stdio.h>
 #include <strings.h>
 #include <unistd.h>
+#include <csignal>
 
 class Server
 {

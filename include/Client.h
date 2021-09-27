@@ -13,6 +13,7 @@
 
 #include "Packet.h"
 #include "Communication.h"
+#include "Profile.h"
 #include <iostream>
 #include <list>
 #include <netinet/in.h>
@@ -27,6 +28,7 @@ class Client
 {
 private:
     std::string _profile;
+
     int _cmdSocketDescriptor;
     int _ntfSocketDescriptor;
 
@@ -40,8 +42,6 @@ public:
     int login();
     int logoff();
 
-    int read_pkt(int socketId, Packet *packet);
-    int write_pkt(int socketId, Packet packet);
     int get_ntf_socket();
     int get_cmd_socket();
 

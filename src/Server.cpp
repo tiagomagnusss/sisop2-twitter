@@ -1,5 +1,13 @@
 #include "../include/Server.h"
 
+bool interrupted = false;
+void sigint_handler(int signum)
+{
+    std::cout << "Interrupt received" << std::endl;
+    interrupted = true;
+}
+
+
 Server::Server(int port, int maxConnections)
 {
     createSocket();
@@ -75,6 +83,9 @@ void Server::startServing()
     std::list<pthread_t> threadList = std::list<pthread_t>();
     while (true)
     {
+        if ( interrupted ) break;
+
+        // TODO: aceitar conexão de notificação e de comandos ao mesmo tempo
         int connectionSocketDescriptor = acceptConnection();
         std::cout << "New connection received!\n";
         pthread_t clientThread;
@@ -84,6 +95,7 @@ void Server::startServing()
         threadList.push_back(clientThread);
     }
 
+    std::cout << "Waiting for threads join..." << std::endl;
     for (pthread_t thread : threadList)
         pthread_join(thread, NULL);
 }
@@ -101,9 +113,13 @@ int main(int argc, char *argv[])
     int maxConnections = atoi(argv[2]);
 
     Server server(port, maxConnections);
+    // TODO: habilitar quando parar de debugar
+    // como a leitura é bloqueante na thread, o processo só itera quando receber algo
+    // signal(SIGINT, sigint_handler);
 
     server.startServing();
 
+    std::cout << "Stopped serving, shutting down server..." << std::endl;
     return 0;
 }
 
@@ -117,6 +133,15 @@ void *commandReceiverThread(void *args)
 
     while (true)
     {
+        if ( interrupted )
+        {
+            // Notifica que o server vai desconectar
+            Communication::sendPacket(socketDescriptor, createPacket(SERVER_HALT, 0, 0, std::string()));
+            break;
+        }
+
+        // LEITURA BLOQUEANTE
+        // só vai permitir encerrar ou fazer outros processamentos quando receber algo
         bytesRead = Communication::receivePacket(socketDescriptor, &packet);
 
         if (bytesRead > 0)
@@ -133,7 +158,9 @@ void *commandReceiverThread(void *args)
 
             if (packet.type == LOGOFF)
             {
+                // encerra a thread
                 std::cout << "Profile " << packet.payload << " logged off (socket " << socketDescriptor << ")" << std::endl;
+                break;
             }
 
             if (packet.type == SEND)
@@ -142,6 +169,7 @@ void *commandReceiverThread(void *args)
                 std::cout << "Replying to SEND command... ";
                 bytesWritten = Communication::sendPacket(socketDescriptor, replyPacket);
                 if ( bytesWritten > 0 ) std::cout << "OK!" << std::endl;
+
                 // TODO: atuar com o send
             }
 
@@ -151,11 +179,13 @@ void *commandReceiverThread(void *args)
                 std::cout << "Replying to FOLLOW command... ";
                 bytesWritten = Communication::sendPacket(socketDescriptor, replyPacket);
                 if ( bytesWritten > 0 ) std::cout << "OK!" << std::endl;
+
                 // TODO: atuar com o follow
             }
         }
     }
 
+    std::cout << "Shutting down thread on socket " << socketDescriptor << std::endl;
     close(socketDescriptor);
     return NULL;
 }
