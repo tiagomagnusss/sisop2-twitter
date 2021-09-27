@@ -1,12 +1,14 @@
 #include "../include/Server.h"
+#include "../include/Profile.h"
 
 bool interrupted = false;
+Profile pfManager = Profile();
+
 void sigint_handler(int signum)
 {
     std::cout << "Interrupt received" << std::endl;
     interrupted = true;
 }
-
 
 Server::Server(int port, int maxConnections)
 {
@@ -117,6 +119,7 @@ int main(int argc, char *argv[])
     // como a leitura é bloqueante na thread, o processo só itera quando receber algo
     // signal(SIGINT, sigint_handler);
 
+    pfManager.loadProfiles();
     server.startServing();
 
     std::cout << "Stopped serving, shutting down server..." << std::endl;
@@ -151,6 +154,8 @@ void *commandReceiverThread(void *args)
 
             if (packet.type == LOGIN)
             {
+                Profile pf = Profile(packet.payload);
+
                 replyPacket = createPacket(REPLY_LOGIN, 0, time(0), "Login OK!");
                 std::cout << "Approved login of " << packet.payload << " on socket " << socketDescriptor << std::endl;
                 Communication::sendPacket(socketDescriptor, replyPacket);

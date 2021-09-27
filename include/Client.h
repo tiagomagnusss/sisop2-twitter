@@ -27,8 +27,8 @@
 class Client
 {
 private:
-    std::string _profile;
 
+    std::string _profile;
     int _cmdSocketDescriptor;
     int _ntfSocketDescriptor;
 

@@ -209,13 +209,12 @@ void* cmd_thread(void* args)
 
         if (interrupted || message == "EXIT" || message == "exit")
         {
-            // Notifica que o cliente vai desconectar
-            Communication::sendPacket(socketId, createPacket(CLIENT_HALT, 0, 0, std::string()));
+            // encerra a thread
             break;
         }
 
-        // ignora se estiver vazio
-        if (message.empty()) continue;
+        // ignora se estiver vazio ou for um codigo invalido para o client
+        if (message.empty() || result.first > 5) continue;
 
         if ( result.first == ERROR )
         {

@@ -14,7 +14,6 @@ typedef enum
     FOLLOW,
     SEND,
     LOGOFF,
-    CLIENT_HALT,
     ERROR,
 
     // Server
