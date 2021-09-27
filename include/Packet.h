@@ -15,6 +15,7 @@ typedef enum
     SEND,
     LOGOFF,
     CLIENT_HALT,
+    ERROR,
 
     // Server
     REPLY_LOGIN,

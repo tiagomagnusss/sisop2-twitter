@@ -110,11 +110,14 @@ int main(int argc, char *argv[])
 void *commandReceiverThread(void *args)
 {
     int socketDescriptor = *((int *)args);
+    int bytesRead, bytesWritten;
+
     Packet packet;
-    
+    Packet replyPacket;
+
     while (true)
     {
-        int bytesRead = Communication::receivePacket(socketDescriptor, &packet);
+        bytesRead = Communication::receivePacket(socketDescriptor, &packet);
 
         if (bytesRead > 0)
         {
@@ -123,7 +126,7 @@ void *commandReceiverThread(void *args)
 
             if (packet.type == LOGIN)
             {
-                Packet replyPacket = createPacket(REPLY_LOGIN, 0, time(0), "Login OK!");
+                replyPacket = createPacket(REPLY_LOGIN, 0, time(0), "Login OK!");
                 std::cout << "Approved login of " << packet.payload << " on socket " << socketDescriptor << std::endl;
                 Communication::sendPacket(socketDescriptor, replyPacket);
             }
@@ -132,8 +135,27 @@ void *commandReceiverThread(void *args)
             {
                 std::cout << "Profile " << packet.payload << " logged off (socket " << socketDescriptor << ")" << std::endl;
             }
+
+            if (packet.type == SEND)
+            {
+                replyPacket = createPacket(REPLY_SEND, 0, time(0), "Command SEND received!\n");
+                std::cout << "Replying to SEND command... ";
+                bytesWritten = Communication::sendPacket(socketDescriptor, replyPacket);
+                if ( bytesWritten > 0 ) std::cout << "OK!" << std::endl;
+                // TODO: atuar com o send
+            }
+
+            if (packet.type == FOLLOW)
+            {
+                replyPacket = createPacket(REPLY_FOLLOW, 0, time(0), "Command FOLLOW received!\n");
+                std::cout << "Replying to FOLLOW command... ";
+                bytesWritten = Communication::sendPacket(socketDescriptor, replyPacket);
+                if ( bytesWritten > 0 ) std::cout << "OK!" << std::endl;
+                // TODO: atuar com o follow
+            }
         }
     }
+
     close(socketDescriptor);
     return NULL;
 }

@@ -10,6 +10,7 @@ class Communication{
     private:
 
     public:
+    static int receivePacket(int socketDescriptor, Packet *packet, bool silent);
     static int receivePacket(int socketDescriptor, Packet *packet);
     static int sendPacket(int socketDescriptor, Packet packet);
 

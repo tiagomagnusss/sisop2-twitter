@@ -5,7 +5,7 @@ bool interrupted = false;
 void* ntf_thread(void* args);
 void* cmd_thread(void* args);
 
-void sig_int_handler(int signum)
+void sigint_handler(int signum)
 {
     std::cout << "Interrupt received" << std::endl;
     interrupted = true;
@@ -127,6 +127,7 @@ int Client::logoff()
     close(_cmdSocketDescriptor);
 }
 
+std::pair<PacketType, std::string> splitMessage(std::string input);
 std::string read_input();
 Client cli;
 
@@ -157,7 +158,7 @@ int main(int argc, char *argv[])
     }
 
     cli.init(profile, serverAddress, serverPort);
-    signal(SIGINT, sig_int_handler);
+    signal(SIGINT, sigint_handler);
     cli.login();
 
     pthread_t ntf_thd, cmd_thd;
@@ -177,10 +178,8 @@ void* ntf_thread(void* args)
 
     while( !interrupted )
     {
-        // TODO: remover o print na leitura
-        // sleep pra não floodar o console por enquanto
         sleep(5);
-        Communication::receivePacket(socketId, &pkt);
+        Communication::receivePacket(socketId, &pkt, true);
 
         // server encerrando a conexão
         if ( pkt.type == SERVER_HALT )
@@ -200,11 +199,13 @@ void* cmd_thread(void* args)
 {
     int socketId = cli.get_cmd_socket();
     Packet pkt;
+    int bytesWritten;
 
     while(!interrupted)
     {
         // lê input do user
         std::string message = read_input();
+        std::pair<PacketType, std::string> result = splitMessage(message);
 
         if (interrupted || message == "EXIT" || message == "exit")
         {
@@ -216,14 +217,60 @@ void* cmd_thread(void* args)
         // ignora se estiver vazio
         if (message.empty()) continue;
 
-        // TODO: separar em comando e msg
-        // TODO: usar timestamp nos packets
+        if ( result.first == ERROR )
+        {
+            std::cout << result.second << std::endl;
+            continue;
+        }
+
         // faz o send
-        pkt = createPacket(SEND, 0, 1234, message);
-        Communication::sendPacket(socketId, pkt);
+        bytesWritten = Communication::sendPacket(socketId, createPacket(result.first, 0, 1234, result.second));
+        if (bytesWritten > 0)
+        {
+            std::cout << "OK!" << std::endl;
+        }
+
+        // espera a resposta
+        std::cout << "Sending " << getPacketTypeName(result.first) << " command... ";
+        Communication::receivePacket(socketId, &pkt);
+
+        if ( pkt.type == ERROR )
+        {
+            std::cout << "Failed to send command: " << pkt.payload << std::endl;
+        }
+        else
+        {
+            std::cout << pkt.payload;
+        }
     }
 
     return NULL;
+}
+
+std::pair<PacketType, std::string> splitMessage(std::string input)
+{
+    std::pair<PacketType, std::string> result;
+
+    std::string send = "SEND";
+    std::string follow = "FOLLOW";
+
+    if ( strncmp( input.c_str(), send.c_str(), send.size() ) == 0 )
+    {
+        result.first = SEND;
+        result.second = input.substr( send.size() + 1 );
+    }
+    else if ( strncmp(input.c_str(), send.c_str(), send.size() ) ==0 )
+    {
+        result.first = FOLLOW;
+        result.second = input.substr( follow.size() + 1 );
+    }
+    else
+    {
+        result.first = ERROR;
+        result.second = "Invalid command sent\n";
+    }
+
+    return result;
 }
 
 std::string read_input()
