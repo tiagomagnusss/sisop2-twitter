@@ -233,14 +233,8 @@ void* cmd_thread(void* args)
         std::cout << "Sending " << getPacketTypeName(result.first) << " command... ";
         Communication::receivePacket(socketId, &pkt);
 
-        if ( pkt.type == ERROR )
-        {
-            std::cout << "Failed to send command: " << pkt.payload << std::endl;
-        }
-        else
-        {
-            std::cout << pkt.payload;
-        }
+        // printa a resposta do servidor
+        std::cout << pkt.payload << std::endl;
     }
 
     return NULL;

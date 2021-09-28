@@ -26,7 +26,6 @@ class Profile
         std::string getUsername();
 
         void follow_user(std::string username);
-        void unfollow_user(std::string username);
 
         std::list<std::string> getFollowers();
         std::list<std::string> getFollowing();

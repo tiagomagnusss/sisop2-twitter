@@ -89,6 +89,11 @@ bool Profile::user_exists(std::string username)
     return profiles.find(username) != profiles.end();
 }
 
+void Profile::follow_user(std::string username)
+{
+    _followers.push_back(username);
+}
+
 std::list<std::string> Profile::getFollowers()
 {
     return _followers;

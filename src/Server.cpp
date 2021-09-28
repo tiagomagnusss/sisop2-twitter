@@ -133,6 +133,7 @@ void *commandReceiverThread(void *args)
 
     Packet packet;
     Packet replyPacket;
+    Profile profile;
 
     while (true)
     {
@@ -154,7 +155,7 @@ void *commandReceiverThread(void *args)
 
             if (packet.type == LOGIN)
             {
-                Profile pf = Profile(packet.payload);
+                profile = Profile(packet.payload);
 
                 replyPacket = createPacket(REPLY_LOGIN, 0, time(0), "Login OK!");
                 std::cout << "Approved login of " << packet.payload << " on socket " << socketDescriptor << std::endl;
@@ -180,12 +181,20 @@ void *commandReceiverThread(void *args)
 
             if (packet.type == FOLLOW)
             {
-                replyPacket = createPacket(REPLY_FOLLOW, 0, time(0), "Command FOLLOW received!\n");
+                if ( !pfManager.user_exists(packet.payload) )
+                {
+                    std::string msgError( "User does not exist\n" );
+                    replyPacket = createPacket(ERROR, 0, time(0), msgError);
+                }
+                else
+                {
+                    replyPacket = createPacket(REPLY_FOLLOW, 0, time(0), "OK!\n");
+                    profile.follow_user(packet.payload);
+                }
+
                 std::cout << "Replying to FOLLOW command... ";
                 bytesWritten = Communication::sendPacket(socketDescriptor, replyPacket);
                 if ( bytesWritten > 0 ) std::cout << "OK!" << std::endl;
-
-                // TODO: atuar com o follow
             }
         }
     }
