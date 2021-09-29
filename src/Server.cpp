@@ -155,7 +155,7 @@ void *commandReceiverThread(void *args)
 
             if (packet.type == LOGIN)
             {
-                profile = Profile(packet.payload);
+                profile = pfManager.get_user(packet.payload);
 
                 replyPacket = createPacket(REPLY_LOGIN, 0, time(0), "Login OK!");
                 std::cout << "Approved login of " << packet.payload << " on socket " << socketDescriptor << std::endl;
@@ -181,7 +181,12 @@ void *commandReceiverThread(void *args)
 
             if (packet.type == FOLLOW)
             {
-                if ( !pfManager.user_exists(packet.payload) )
+                if ( profile.getUsername() == packet.payload )
+                {
+                    std::string msgError( "Users can't follow themselves\n" );
+                    replyPacket = createPacket(ERROR, 0, time(0), msgError);
+                }
+                else if ( !pfManager.user_exists(packet.payload) )
                 {
                     std::string msgError( "User does not exist\n" );
                     replyPacket = createPacket(ERROR, 0, time(0), msgError);
@@ -189,8 +194,14 @@ void *commandReceiverThread(void *args)
                 else
                 {
                     replyPacket = createPacket(REPLY_FOLLOW, 0, time(0), "OK!\n");
-                    profile.follow_user(packet.payload);
+                    pfManager.follow_user(profile.getUsername(), packet.payload);
                 }
+
+                std::string name = profile.getUsername();
+                // atualiza os usuários
+                pfManager.saveProfiles();
+                pfManager.loadProfiles();
+                profile = pfManager.get_user( name );
 
                 std::cout << "Replying to FOLLOW command... ";
                 bytesWritten = Communication::sendPacket(socketDescriptor, replyPacket);

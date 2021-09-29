@@ -29,7 +29,9 @@ void Profile::saveProfiles()
     {
         std::string username = pair.first;
         Profile profile = pair.second;
-        database.push_back({{"username", username}, {"followers", profile.getFollowers()}, {"following", profile.getFollowing()}});
+        std::cout << profile.followers.size() << std::endl;
+        std::cout << profile.following.size() << std::endl;
+        database.push_back({{"username", username}, {"followers", profile.followers}, {"following", profile.following}});
     }
 
     // salva em disco
@@ -57,14 +59,26 @@ void Profile::loadProfiles()
     {
         Profile pf = Profile();
         pf.setUsername(item.value()["username"].get<std::string>());
-        pf.setFollowers(item.value()["followers"].get<std::list<std::string>>());
-        pf.setFollowing(item.value()["followers"].get<std::list<std::string>>());
+        pf.setFollowers( item.value()["followers"].get<std::list<std::string>>() );
+        pf.setFollowing( item.value()["following"].get<std::list<std::string>>() );
+
 
         profiles.insert(std::pair<std::string, Profile>(pf.getUsername(), pf));
-        //profiles.emplace(pf);
     }
 
     printf("%i profiles loaded successfully\n", (int) profiles.size());
+}
+
+Profile Profile::get_user(std::string username)
+{
+    if ( user_exists(username) )
+    {
+        std::cout << "Getting user " << username << std::endl;
+        return profiles.at(username);
+    }
+
+    create_user(username);
+    return profiles.at(username);
 }
 
 std::string Profile::getUsername()
@@ -77,8 +91,8 @@ void Profile::create_user(std::string username)
     std::cout << "Creating user " << username << std::endl;
 
     _username = username;
-    setFollowers(std::list<std::string>());
-    setFollowing(std::list<std::string>());
+    followers = std::list<std::string>();
+    following = std::list<std::string>();
 
     profiles.insert(std::pair<std::string, Profile>(username, *this));
     saveProfiles();
@@ -89,19 +103,14 @@ bool Profile::user_exists(std::string username)
     return profiles.find(username) != profiles.end();
 }
 
-void Profile::follow_user(std::string username)
+void Profile::follow_user(std::string username, std::string follow)
 {
-    _followers.push_back(username);
-}
+    profiles.at(username).following.push_back(follow);
+    profiles.at(follow).followers.push_back(username);
 
-std::list<std::string> Profile::getFollowers()
-{
-    return _followers;
-}
-
-std::list<std::string> Profile::getFollowing()
-{
-    return _following;
+    // remove duplicatas
+    profiles.at(username).following.unique();
+    profiles.at(follow).followers.unique();
 }
 
 void Profile::setUsername( std::string username )
@@ -111,10 +120,10 @@ void Profile::setUsername( std::string username )
 
 void Profile::setFollowers( std::list<std::string> followers )
 {
-    _followers = followers;
+    followers = followers;
 }
 
 void Profile::setFollowing( std::list<std::string> following )
 {
-    _following = following;
+    following = following;
 }
