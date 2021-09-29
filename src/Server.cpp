@@ -171,6 +171,13 @@ void *commandReceiverThread(void *args)
 
             if (packet.type == SEND)
             {
+                // só gera notificação se tiver followers
+                if ( profile.followers.size() > 0 )
+                {
+                    // TODO: fazer algo com as notificações
+                    Notification ntf = create_notification(packet.payload, profile.followers.size());
+                }
+
                 replyPacket = createPacket(REPLY_SEND, 0, time(0), "Command SEND received!\n");
                 std::cout << "Replying to SEND command... ";
                 bytesWritten = Communication::sendPacket(socketDescriptor, replyPacket);

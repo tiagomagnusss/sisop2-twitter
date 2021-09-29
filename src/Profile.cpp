@@ -29,8 +29,7 @@ void Profile::saveProfiles()
     {
         std::string username = pair.first;
         Profile profile = pair.second;
-        std::cout << profile.followers.size() << std::endl;
-        std::cout << profile.following.size() << std::endl;
+        std::cout << "Saving " << profile.getUsername() << " with " << profile.followers.size() << " followers and " << profile.following.size() << " following" << std::endl;
         database.push_back({{"username", username}, {"followers", profile.followers}, {"following", profile.following}});
     }
 

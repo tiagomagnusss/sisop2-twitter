@@ -7,6 +7,7 @@
 #define FAILURE_ACCEPT 4
 
 #include "Packet.h"
+#include "Notification.h"
 #include "Communication.h"
 #include "Profile.h"
 #include <iostream>

@@ -11,8 +11,8 @@ typedef struct __notification
     time_t timestamp;    //Timestamp da notificação
     std::string message; //Mensagem
     uint16_t pending;    //Quantidade de leitores pendentes
-} notification;
+} Notification;
 
-notification create_notification(std::string message, uint16_t pending);
+Notification create_notification(std::string message, uint16_t pending);
 
 #endif

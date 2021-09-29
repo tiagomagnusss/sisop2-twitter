@@ -3,9 +3,9 @@
 // Identificadores únicos
 std::atomic<uint32_t> NOTIFICATION_ID(0);
 
-notification create_notification(std::string message, uint16_t pending)
+Notification create_notification(std::string message, uint16_t pending)
 {
-    notification notification;
+    Notification notification;
 
     notification.id = NOTIFICATION_ID.fetch_add(1);
     notification.message = message;
