@@ -1,1 +1,12 @@
-[]
+[
+  {
+    "followers": [],
+    "following": [],
+    "username": "@batata"
+  },
+  {
+    "followers": ["@batata"],
+    "following": [],
+    "username": "@teste"
+  }
+]

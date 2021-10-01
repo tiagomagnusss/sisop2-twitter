@@ -28,7 +28,7 @@ void Client::init(std::string profile, std::string serverAddress, std::string se
     _ntfSocketDescriptor = createSocket();
 
     connectToServer(_cmdSocketDescriptor, serverAddress, serverPort);
-    //connectToServer(_ntfSocketDescriptor, serverAddress, serverPort);
+    connectToServer(_ntfSocketDescriptor, serverAddress, serverPort);
 }
 
 int Client::createSocket()
@@ -68,6 +68,11 @@ int Client::connectToServer(int socketId, std::string serverAddress, std::string
     return 0;
 }
 
+std::string Client::get_profile()
+{
+    return _profile;
+}
+
 int Client::get_ntf_socket()
 {
     return _ntfSocketDescriptor;
@@ -85,7 +90,7 @@ int Client::login()
     while (true)
     {
         packet = createPacket(LOGIN, 0, time(0), _profile);
-        int bytesWritten = Communication::sendPacket(_cmdSocketDescriptor, packet);
+        int bytesWritten = Communication::sendPacket(_ntfSocketDescriptor, packet);
         std::cout << "Logging in as " << packet.payload << " ... ";
 
         if (bytesWritten > 0)
@@ -97,7 +102,7 @@ int Client::login()
 
     while (true)
     {
-        int bytesRead = Communication::receivePacket(_cmdSocketDescriptor, &packet);
+        int bytesRead = Communication::receivePacket(_ntfSocketDescriptor, &packet);
 
         if (bytesRead > 0)
         {
@@ -116,7 +121,7 @@ int Client::logoff()
     {
         packet = createPacket(LOGOFF, 0, time(0), _profile);
         std::cout << "Logging off " << packet.payload << " ... ";
-        int bytesWritten = Communication::sendPacket(_cmdSocketDescriptor, packet);
+        int bytesWritten = Communication::sendPacket(_ntfSocketDescriptor, packet);
         if (bytesWritten > 0)
         {
             std::cout << "OK!" << std::endl;
@@ -222,6 +227,9 @@ void* cmd_thread(void* args)
             continue;
         }
 
+	result.second.insert(0,1,':');
+	result.second.insert(0,cli.get_profile()); //adiciona o usuário no começo da string
+
         // faz o send
         bytesWritten = Communication::sendPacket(socketId, createPacket(result.first, 0, 1234, result.second));
         if (bytesWritten > 0)
@@ -233,8 +241,14 @@ void* cmd_thread(void* args)
         std::cout << "Sending " << getPacketTypeName(result.first) << " command... ";
         Communication::receivePacket(socketId, &pkt);
 
-        // printa a resposta do servidor
-        std::cout << pkt.payload << std::endl;
+        if ( pkt.type == ERROR )
+        {
+            std::cout << "Failed to send command: " << pkt.payload << std::endl;
+        }
+        else
+        {
+            std::cout << pkt.payload;
+        }
     }
 
     return NULL;

@@ -1,5 +1,5 @@
 CC = g++
-CFLAGS = -O2 -Wall -lpthread
+CFLAGS = -std=c++11 -O2 -Wall -lpthread 
 SRC_DIR = ./src
 OBJ_DIR = ./obj
 BIN_DIR = ./bin

@@ -7,18 +7,23 @@
 #define FAILURE_ACCEPT 4
 
 #include "Packet.h"
-#include "Notification.h"
 #include "Communication.h"
 #include "Profile.h"
+#include "Notification.h"
 #include <iostream>
 #include <list>
 #include <netinet/in.h>
 #include <netdb.h>
 #include <errno.h>
 #include <stdio.h>
+#include <string>
+#include <string.h>
 #include <strings.h>
 #include <unistd.h>
 #include <csignal>
+
+
+void *commandReceiverThread(void *args);
 
 class Server
 {
@@ -35,7 +40,5 @@ public:
     ~Server();
     void startServing();
 };
-
-void *commandReceiverThread(void *args);
 
 #endif

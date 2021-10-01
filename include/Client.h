@@ -42,6 +42,7 @@ public:
     int login();
     int logoff();
 
+    std::string get_profile();
     int get_ntf_socket();
     int get_cmd_socket();
 
