@@ -2,7 +2,7 @@
 #include <csignal>
 
 bool interrupted = false;
-char _regexProfile[20] = "@[a-zA-Z0-9_]{3,20}";
+char _regexProfile[20] = "@[a-zA-Z0-9_]{3,19}";
 void* ntf_thread(void* args);
 void* cmd_thread(void* args);
 
