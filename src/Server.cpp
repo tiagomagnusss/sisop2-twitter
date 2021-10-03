@@ -160,7 +160,7 @@ void *commandReceiverThread(void *args)
 
             if (packet.type == LOGIN)
             {
-                Profile pf = pf.get_user(packet.payload);
+                pf = pfManager.get_user(packet.payload);
 
                 replyPacket = createPacket(REPLY_LOGIN, 0, time(0), "Login OK!");
                 std::cout << "Approved login of " << packet.payload << " on socket " << socketDescriptor << std::endl;
