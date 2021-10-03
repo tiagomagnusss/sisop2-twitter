@@ -1,7 +1,7 @@
 #include "../include/ClientUI.h"
 #include <unistd.h> //wait
 
-void *cmd_thread(void *args);
+void* ui_thread(void *args);
 
 WINDOW *ClientUI::createWindow(int height, int width, int starty, int startx, bool border)
 {
@@ -194,28 +194,28 @@ void ClientUI::closeUI()
 
 // Instancia a UI
 ClientUI client;
-int main()
-{
-    
-    // Envia o nome do usuario para exibir na tela
-    client.setProfile("@ajcosta");
+// int main()
+// {
 
-    // Constroi as janelas ncurses
-    client.buildWindows();
+//     // Envia o nome do usuario para exibir na tela
+//     client.setProfile("@ajcosta");
 
-    // thread que fica enviando notificacoes dummy
-    pthread_t testThread;
-    pthread_create(&testThread, NULL, cmd_thread, NULL);
+//     // Constroi as janelas ncurses
+//     client.buildWindows();
 
-    // Comeca a esperar por comandos
-    client.waitCommand();
-    
+//     // thread que fica enviando notificacoes dummy
+//     pthread_t testThread;
+//     pthread_create(&testThread, NULL, cmd_thread, NULL);
 
-    client.closeUI();
-}
+//     // Comeca a esperar por comandos
+//     client.waitCommand();
+
+
+//     client.closeUI();
+// }
 
 // trhead dummy para ficar enviando "notificacoes"
-void *cmd_thread(void *args)
+void* ui_thread(void *args)
 {
     list<string> lista;
     string texto = "@alexandre_da_costa: Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint.";
@@ -224,11 +224,13 @@ void *cmd_thread(void *args)
     Notification testNot = setNotification(texto, lista);
     Notification testNot2 = setNotification(texto2, lista);
 
-    for (int i = 0; i = 15; i++)
+    for (int i = 0; i == 15; i++)
     {
         sleep(2);
         client.addNotification(testNot);
         sleep(2);
         client.addNotification(testNot2);
     }
+
+    return NULL;
 }

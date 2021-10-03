@@ -136,10 +136,12 @@ void *commandReceiverThread(void *args)
 
     Packet packet;
     Packet replyPacket;
+    Profile pf;
     Notification ntf;
 
     while (true)
     {
+        bytesWritten = 0;
         if ( interrupted )
         {
             // Notifica que o server vai desconectar
@@ -162,10 +164,10 @@ void *commandReceiverThread(void *args)
 
                 replyPacket = createPacket(REPLY_LOGIN, 0, time(0), "Login OK!");
                 std::cout << "Approved login of " << packet.payload << " on socket " << socketDescriptor << std::endl;
-                Communication::sendPacket(socketDescriptor, replyPacket);
+                bytesWritten = Communication::sendPacket(socketDescriptor, replyPacket);
 
-		onlineUsersMap.insert(std::pair<std::string, int>(pf.getUsername(), socketDescriptor));
-		std::cout << "socket " << pf.getUsername() << onlineUsersMap.at(pf.getUsername()) << " online " << std::endl;
+                onlineUsersMap.insert(std::pair<std::string, int>(pf.getUsername(), socketDescriptor));
+                std::cout << "socket " << pf.getUsername() << onlineUsersMap.at(pf.getUsername()) << " online " << std::endl;
             }
 
             if (packet.type == LOGOFF)
@@ -173,49 +175,69 @@ void *commandReceiverThread(void *args)
                 // encerra a thread
                 std::cout << "Profile " << packet.payload << " logged off (socket " << socketDescriptor << ")" << std::endl;
 
-		onlineUsersMap.erase(packet.payload);
+        		onlineUsersMap.erase(packet.payload);
                 break;
             }
 
             if (packet.type == SEND)
             {
-		std::string payloadExtract = (std::string) packet.payload;
-		std::string usernameExtract = payloadExtract.substr(0,payloadExtract.find(':'));
-		std::cout << "Profile " << usernameExtract << " sent " << packet.payload << std::endl;
-		
+                std::string payloadExtract = (std::string) packet.payload;
+                std::string usernameExtract = payloadExtract.substr(0,payloadExtract.find(':'));
+                std::cout << "Profile " << usernameExtract << " sent " << packet.payload << std::endl;
+
                 replyPacket = createPacket(REPLY_SEND, 0, time(0), "Command SEND received!\n");
                 std::cout << "Replying to SEND command... ";
                 bytesWritten = Communication::sendPacket(socketDescriptor, replyPacket);
 
-		Profile pf = pf.get_user(usernameExtract);
-		ntf = setNotification(payloadExtract, pf.getFollowers()); //cria a notificação
+                pf = pf.get_user(usernameExtract);
+                ntf = setNotification(payloadExtract, pf.followers); //cria a notificação
 
-		for(auto userToReceiveNotification : pf.getFollowers()){
-		    std::cout << "this is user " << userToReceiveNotification << std::endl;
-		    if(onlineUsersMap.find(userToReceiveNotification) != onlineUsersMap.end()){
-			Communication::sendPacket(onlineUsersMap.at(userToReceiveNotification), packet);
-			std::cout << "Sending to user... "<< userToReceiveNotification << onlineUsersMap.at(userToReceiveNotification) << std::endl;
-			ntf.pendingUsers.remove(userToReceiveNotification);
+                for (auto userToReceiveNotification : pf.followers)
+                {
+                    std::cout << "this is user " << userToReceiveNotification << std::endl;
+                    if(onlineUsersMap.find(userToReceiveNotification) != onlineUsersMap.end())
+                    {
+                        Communication::sendPacket(onlineUsersMap.at(userToReceiveNotification), packet);
+                        std::cout << "Sending to user... "<< userToReceiveNotification << onlineUsersMap.at(userToReceiveNotification) << std::endl;
+                        ntf.pendingUsers.remove(userToReceiveNotification);
+                    }
+                }
 		    }
-		}
 
-		if(ntf.pendingUsers.size()>0)
-		    pendingNotificationsList.push_back(ntf); //armazena a notificação na lista
-
-                if ( bytesWritten > 0 ) std::cout << "OK!" << std::endl;
-
-                // TODO: atuar com o send
+            if( ntf.pendingUsers.size() > 0 )
+            {
+                // armazena a notificação na lista
+                pendingNotificationsList.push_back(ntf);
             }
 
             if (packet.type == FOLLOW)
             {
-                replyPacket = createPacket(REPLY_FOLLOW, 0, time(0), "Command FOLLOW received!\n");
-                std::cout << "Replying to FOLLOW command... ";
-                bytesWritten = Communication::sendPacket(socketDescriptor, replyPacket);
-                if ( bytesWritten > 0 ) std::cout << "OK!" << std::endl;
+                if ( pf.getUsername() == packet.payload )
+                {
+                    std::string msgError( "Users can't follow themselves\n" );
+                    replyPacket = createPacket(ERROR, 0, time(0), msgError);
+                }
+                else if ( !pfManager.user_exists(packet.payload) )
+                {
+                    std::string msgError( "User does not exist\n" );
+                    replyPacket = createPacket(ERROR, 0, time(0), msgError);
+                }
+                else
+                {
+                    replyPacket = createPacket(REPLY_FOLLOW, 0, time(0), "OK!\n");
+                    pfManager.follow_user(pf.getUsername(), packet.payload);
+                }
 
-                // TODO: atuar com o follow
+                std::string name = pf.getUsername();
+                // atualiza os usuários
+                pfManager.saveProfiles();
+                pfManager.loadProfiles();
+                pf = pfManager.get_user( name );
+
+                bytesWritten = Communication::sendPacket(socketDescriptor, replyPacket);
             }
+
+            if ( bytesWritten > 0 ) std::cout << "OK!" << std::endl;
         }
     }
 

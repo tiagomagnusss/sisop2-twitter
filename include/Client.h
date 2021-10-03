@@ -14,6 +14,7 @@
 #include "Packet.h"
 #include "Communication.h"
 #include "Profile.h"
+#include "ClientUI.h"
 #include <iostream>
 #include <list>
 #include <netinet/in.h>

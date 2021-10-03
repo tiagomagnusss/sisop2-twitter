@@ -25,23 +25,19 @@ class Profile
         Profile get_user(std::string username);
         std::string getUsername();
 
-        void follow_user(std::string username);
-        void unfollow_user(std::string username);
-
-        std::list<std::string> getFollowers();
-        std::list<std::string> getFollowing();
+        void follow_user(std::string username, std::string follow);
 
         void setUsername(std::string username);
-        void setFollowers(std::list<std::string> followers);
-        void setFollowing(std::list<std::string> following);
+        void setFollowers(std::list<std::string> newFollowers);
+        void setFollowing(std::list<std::string> newFollowing);
 
         void saveProfiles();
         void loadProfiles();
+
+        std::list<std::string> followers;
+        std::list<std::string> following;
     private:
         std::string _username;
-
-        std::list<std::string> _followers;
-        std::list<std::string> _following;
 };
 
 #endif

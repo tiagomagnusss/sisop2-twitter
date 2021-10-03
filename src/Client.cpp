@@ -161,6 +161,18 @@ int main(int argc, char *argv[])
         exit(INVALID_PORT);
     }
 
+    // ClientUI client;
+    // Envia o nome do usuario para exibir na tela
+    // client.setProfile(profile);
+    // Constroi as janelas ncurses
+    // client.buildWindows();
+    // thread que fica enviando notificacoes dummy
+    // pthread_t testThread;
+    // pthread_create(&testThread, NULL, ui_thread, NULL);
+    // Comeca a esperar por comandos
+    // client.waitCommand();
+    // client.closeUI();
+
     cli.init(profile, serverAddress, serverPort);
     signal(SIGINT, sigint_handler);
 
@@ -227,8 +239,8 @@ void* cmd_thread(void* args)
             continue;
         }
 
-	result.second.insert(0,1,':');
-	result.second.insert(0,cli.get_profile()); //adiciona o usuário no começo da string
+        result.second.insert(0,1,':');
+        result.second.insert(0,cli.get_profile()); //adiciona o usuário no começo da string
 
         // faz o send
         bytesWritten = Communication::sendPacket(socketId, createPacket(result.first, 0, 1234, result.second));
