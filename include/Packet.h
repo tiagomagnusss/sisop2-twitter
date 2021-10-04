@@ -5,7 +5,7 @@
 #include <string.h>
 #include <ctime>
 
-#define MAX_MESSAGE_SIZE 148
+#define MAX_MESSAGE_SIZE 128
 
 typedef enum
 {
