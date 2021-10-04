@@ -167,9 +167,33 @@ void *commandReceiverThread(void *args)
                 bytesWritten = Communication::sendPacket(socketDescriptor, replyPacket);
 
 		if(packet.sequenceNumber == 0)
-                   onlineUsersMap.insert(std::pair<std::string, int>(pf.getUsername(), socketDescriptor));
+		{
+                    onlineUsersMap.insert(std::pair<std::string, int>(pf.getUsername(), socketDescriptor));
+                    std::cout << "User " << pf.getUsername() << " on socket " << onlineUsersMap.at(pf.getUsername()) << " is online and ready to receive notifications"  << std::endl;
 
-                std::cout << "socket " << pf.getUsername() << onlineUsersMap.at(pf.getUsername()) << " online " << std::endl;
+		    Notification notificationManager;
+		    std::list<Notification> instanceForPendingNotificationsList = pendingNotificationsList;
+
+		    for(auto currentNotification : instanceForPendingNotificationsList)
+		    {
+			pendingNotificationsList.pop_front();
+			notificationManager = currentNotification;
+			for(auto currentUser : currentNotification.pendingUsers)
+			    {
+				if(currentUser == pf.getUsername() )
+				{
+                        	    Communication::sendPacket(socketDescriptor, createPacket(NOTIFICATION, 0, time(0), currentNotification.senderUser));
+                        	    Communication::sendPacket(socketDescriptor, createPacket(NOTIFICATION, 1, time(0), currentNotification.message));
+                        	    std::cout << "Sending to user "<< currentUser << " on socket " << socketDescriptor << " a pending notification..." << std::endl;
+				    notificationManager.pendingUsers.remove(currentUser);
+				}
+			    }
+			if(notificationManager.pendingUsers.size()>0)
+			{
+			    pendingNotificationsList.push_back(notificationManager);
+		 	}
+		    }
+		}
             }
 
             if (packet.type == LOGOFF)
@@ -177,36 +201,37 @@ void *commandReceiverThread(void *args)
                 // encerra a thread
                 std::cout << "Profile " << packet.payload << " logged off (socket " << socketDescriptor << ")" << std::endl;
 
-        		onlineUsersMap.erase(packet.payload);
+        	onlineUsersMap.erase(pf.getUsername());
                 break;
             }
 
             if (packet.type == SEND)
             {
-                std::cout << "Profile " << pf.getUsername() << " sent " << packet.payload << std::endl;
+                std::cout << "Profile " << pf.getUsername() << " sent: " << packet.payload << std::endl;
 
-                replyPacket = createPacket(REPLY_SEND, 0, time(0), "Command SEND received!\n");
+                replyPacket = createPacket(REPLY_SEND, 0, time(0), "Command SEND received!");
                 std::cout << "Replying to SEND command... \n";
                 bytesWritten = Communication::sendPacket(socketDescriptor, replyPacket);
 
-                ntf = setNotification(packet.payload, pf.followers); //cria a notificação
+                ntf = setNotification(pf.getUsername(), packet.payload); //cria a notificação
 
                 for (auto userToReceiveNotification : pf.followers)
                 {
                     std::cout << "this is user " << userToReceiveNotification << std::endl;
                     if(onlineUsersMap.find(userToReceiveNotification) != onlineUsersMap.end())
                     {
-                        Communication::sendPacket(onlineUsersMap.at(userToReceiveNotification), packet);
-                        std::cout << "Sending to user... "<< userToReceiveNotification << onlineUsersMap.at(userToReceiveNotification) << std::endl;
-                        ntf.pendingUsers.remove(userToReceiveNotification);
-                    }
+                        Communication::sendPacket(onlineUsersMap.at(userToReceiveNotification), createPacket(NOTIFICATION, 0, time(0), pf.getUsername()));
+                        Communication::sendPacket(onlineUsersMap.at(userToReceiveNotification), createPacket(NOTIFICATION, 1, time(0), packet.payload));
+                        std::cout << "Sending to user "<< userToReceiveNotification << " on socket " << onlineUsersMap.at(userToReceiveNotification) << " a notification..." << std::endl;
+                    }else
+			ntf.pendingUsers.push_back(userToReceiveNotification);
                 }
-		    }
 
-            if( ntf.pendingUsers.size() > 0 )
-            {
-                // armazena a notificação na lista
+            	if( ntf.pendingUsers.size() > 0 )
+            	{
+                // armazena a notificação na lista de espera
                 pendingNotificationsList.push_back(ntf);
+		}
             }
 
             if (packet.type == FOLLOW)

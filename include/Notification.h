@@ -10,12 +10,13 @@
 
 typedef struct _notification
 {
-    uint32_t id;         //Identificador da notificação (sugere-se um identificador único)
-    time_t timestamp;    //Timestamp da notificação
-    std::string message; //Mensagem
-    std::list<std::string> pendingUsers;    //Quantidade de leitores pendentes
+    uint32_t id;         			//Identificador da notificação (sugere-se um identificador único)
+    time_t timestamp;    			//Timestamp da notificação
+    std::string senderUser;			//Remetente
+    std::string message; 			//Mensagem
+    std::list<std::string> pendingUsers;	//Destinatários pendentes
 } Notification;
 
-Notification setNotification(std::string message, std::list<std::string> pending);
+Notification setNotification(std::string senderUser, std::string message);
 
 #endif

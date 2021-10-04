@@ -8,7 +8,6 @@ void* cmd_thread(void* args);
 
 void sigint_handler(int signum)
 {
-    std::cout << "Interrupt received" << std::endl;
     interrupted = true;
 }
 
@@ -18,7 +17,6 @@ Client::Client()
 Client::~Client()
 {
     std::cout << "Destructing client..." << std::endl;
-    logoff();
 }
 
 void Client::init(std::string profile, std::string serverAddress, std::string serverPort)
@@ -91,16 +89,24 @@ int Client::login()
     {
         packet = createPacket(LOGIN, 0, time(0), _profile);
         int bytesWritten = Communication::sendPacket(_ntfSocketDescriptor, packet);
-	packet = createPacket(LOGIN, 1, time(0), _profile);
-        Communication::sendPacket(_cmdSocketDescriptor, packet);
 	
-        std::cout << "Logging in as " << packet.payload << " ... ";
+        std::cout << "Logging in as " << packet.payload << " on notification socket " << _ntfSocketDescriptor << " ... ";
+
+        if (bytesWritten > 0)
+        {
+            std::cout << "Login packet sent." << std::endl;
+        }
+
+	bytesWritten = Communication::sendPacket(_cmdSocketDescriptor, createPacket(LOGIN, 1, time(0), _profile));
+
+        std::cout << "Logging in as " << packet.payload << " on command socket " << _cmdSocketDescriptor << " ... ";
 
         if (bytesWritten > 0)
         {
             std::cout << "Login packet sent." << std::endl;
             break;
         }
+
     }
 
     while (true)
@@ -109,9 +115,17 @@ int Client::login()
 
         if (bytesRead > 0)
         {
-            std::cout << "Server response: " << packet.payload << std::endl;
+            std::cout << "Server response for notification thread: " << packet.payload << std::endl;
+        }
+
+	bytesRead = Communication::receivePacket(_cmdSocketDescriptor, &packet);
+
+        if (bytesRead > 0)
+        {
+            std::cout << "Server response for command thread: " << packet.payload << std::endl;
             break;
         }
+
     }
     return 0;
 }
@@ -123,8 +137,16 @@ int Client::logoff()
     while (true)
     {
         packet = createPacket(LOGOFF, 0, time(0), _profile);
-        std::cout << "Logging off " << packet.payload << " ... ";
+
+        std::cout << "Logging off notification thread of " << packet.payload << " ... ";
         int bytesWritten = Communication::sendPacket(_ntfSocketDescriptor, packet);
+        if (bytesWritten > 0)
+        {
+            std::cout << "OK!" << std::endl;
+        }
+
+	std::cout << "Logging off command thread of " << packet.payload << " ... ";
+	bytesWritten = Communication::sendPacket(_cmdSocketDescriptor, packet);
         if (bytesWritten > 0)
         {
             std::cout << "OK!" << std::endl;
@@ -177,7 +199,7 @@ int main(int argc, char *argv[])
     // client.closeUI();
 
     cli.init(profile, serverAddress, serverPort);
-    signal(SIGINT, sigint_handler);
+    signal(SIGINT, SIG_DFL);
 
     cli.login();
 
@@ -208,7 +230,11 @@ void* ntf_thread(void* args)
         }
         else if ( pkt.type == NOTIFICATION )
         {
-            std::cout << pkt.payload << std::endl;
+	    if(pkt.sequenceNumber == 0)
+        	std::cout << "<" << pkt.timestamp << "> "<< pkt.payload << ": ";
+	    else
+		std::cout << pkt.payload << std::endl;	
+    
         }
     }
 
@@ -230,6 +256,9 @@ void* cmd_thread(void* args)
         if (interrupted || message == "EXIT" || message == "exit")
         {
             // encerra a thread
+	    cli.logoff();
+	    signal(SIGINT, sigint_handler);
+	    raise(SIGINT);
             break;
         }
 
@@ -251,6 +280,7 @@ void* cmd_thread(void* args)
 
         // espera a resposta
         std::cout << "Sending " << getPacketTypeName(result.first) << " command... ";
+
         Communication::receivePacket(socketId, &pkt);
 
         if ( pkt.type == ERROR )
@@ -259,7 +289,7 @@ void* cmd_thread(void* args)
         }
         else
         {
-            std::cout << pkt.payload;
+            std::cout << pkt.payload << std::endl;
         }
     }
 
