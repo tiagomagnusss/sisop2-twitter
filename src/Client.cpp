@@ -27,8 +27,8 @@ void Client::init(std::string profile, std::string serverAddress, std::string se
     _cmdSocketDescriptor = createSocket();
     _ntfSocketDescriptor = createSocket();
 
-    connectToServer(_cmdSocketDescriptor, serverAddress, serverPort);
     connectToServer(_ntfSocketDescriptor, serverAddress, serverPort);
+    connectToServer(_cmdSocketDescriptor, serverAddress, serverPort);
 }
 
 int Client::createSocket()

@@ -22,7 +22,7 @@ Profile::~Profile()
 void Profile::saveProfiles()
 {
     nlohmann::json database;
-    printf("Saving %i profiles...\n", (int) profiles.size());
+    //printf("Saving %i profiles...\n", (int) profiles.size());
 
     // itera sobre os perfis já salvos pelo server
     for ( auto pair : profiles )
@@ -39,13 +39,13 @@ void Profile::saveProfiles()
     stream << database.dump(2);
     stream.close();
 
-    printf("Profiles saved successfully\n");
+    //printf("Profiles saved successfully\n");
 }
 
 void Profile::loadProfiles()
 {
     nlohmann::json database;
-    printf("Loading profiles...\n");
+    //printf("Loading profiles...\n");
 
     std::ifstream stream(DB_PATH);
 
@@ -64,7 +64,7 @@ void Profile::loadProfiles()
         //profiles.emplace(pf);
     }
 
-    printf("%i profiles loaded successfully\n", (int) profiles.size());
+    //printf("%i profiles loaded successfully\n", (int) profiles.size());
 }
 
 Profile Profile::get_user(std::string username)

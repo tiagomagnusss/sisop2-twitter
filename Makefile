@@ -16,7 +16,7 @@ CLIENT_DEPS += $(OBJ_DIR)/Packet.o
 CLIENT_DEPS += $(OBJ_DIR)/Communication.o
 CLIENT_DEPS += $(OBJ_DIR)/Profile.o
 CLIENT_DEPS += $(OBJ_DIR)/Notification.o
-CLIENT_DEPS += $(OBJ_DIR)/ClientUI.o
+#CLIENT_DEPS += $(OBJ_DIR)/ClientUI.o
 app_client: $(CLIENT_DEPS)
 	$(CC) $(DEBUGF) -o $(BIN_DIR)/$@ $^ $(CFLAGS)
 

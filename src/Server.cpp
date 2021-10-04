@@ -212,20 +212,26 @@ void *commandReceiverThread(void *args)
 
             if (packet.type == FOLLOW)
             {
-                if ( pf.getUsername() == packet.payload )
+                std::string payloadExtract = (std::string) packet.payload;
+                std::string usernameExtract = payloadExtract.substr(0,payloadExtract.find(':'));
+                std::string followExtract = payloadExtract.substr(payloadExtract.find(':')+1, payloadExtract.size()-1);
+                std::cout << std::endl << followExtract << std::endl;
+
+                if ( pf.getUsername() == followExtract )
                 {
                     std::string msgError( "Users can't follow themselves\n" );
                     replyPacket = createPacket(ERROR, 0, time(0), msgError);
                 }
-                else if ( !pfManager.user_exists(packet.payload) )
+                else if ( !pfManager.user_exists(followExtract) )
                 {
                     std::string msgError( "User does not exist\n" );
                     replyPacket = createPacket(ERROR, 0, time(0), msgError);
                 }
                 else
                 {
+                    std::cout << "User " << pf.getUsername() << " is now following " << followExtract << std::endl;
                     replyPacket = createPacket(REPLY_FOLLOW, 0, time(0), "OK!\n");
-                    pfManager.follow_user(pf.getUsername(), packet.payload);
+                    pfManager.follow_user(pf.getUsername(), followExtract);
                 }
 
                 std::string name = pf.getUsername();
