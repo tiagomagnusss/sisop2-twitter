@@ -166,34 +166,35 @@ void *commandReceiverThread(void *args)
                 std::cout << "Approved login of " << packet.payload << " on socket " << socketDescriptor << std::endl;
                 bytesWritten = Communication::sendPacket(socketDescriptor, replyPacket);
 
-		if(packet.sequenceNumber == 0)
-		{
+                if(packet.sequenceNumber == 0)
+                {
                     onlineUsersMap.insert(std::pair<std::string, int>(pf.getUsername(), socketDescriptor));
                     std::cout << "User " << pf.getUsername() << " on socket " << onlineUsersMap.at(pf.getUsername()) << " is online and ready to receive notifications"  << std::endl;
 
-		    Notification notificationManager;
-		    std::list<Notification> instanceForPendingNotificationsList = pendingNotificationsList;
+                    Notification notificationManager;
+                    std::list<Notification> instanceForPendingNotificationsList = pendingNotificationsList;
 
-		    for(auto currentNotification : instanceForPendingNotificationsList)
-		    {
-			pendingNotificationsList.pop_front();
-			notificationManager = currentNotification;
-			for(auto currentUser : currentNotification.pendingUsers)
-			    {
-				if(currentUser == pf.getUsername() )
-				{
-                        	    Communication::sendPacket(socketDescriptor, createPacket(NOTIFICATION, 0, time(0), currentNotification.senderUser));
-                        	    Communication::sendPacket(socketDescriptor, createPacket(NOTIFICATION, 1, time(0), currentNotification.message));
-                        	    std::cout << "Sending to user "<< currentUser << " on socket " << socketDescriptor << " a pending notification..." << std::endl;
-				    notificationManager.pendingUsers.remove(currentUser);
-				}
-			    }
-			if(notificationManager.pendingUsers.size()>0)
-			{
-			    pendingNotificationsList.push_back(notificationManager);
-		 	}
-		    }
-		}
+                    for(auto currentNotification : instanceForPendingNotificationsList)
+                    {
+                        pendingNotificationsList.pop_front();
+                        notificationManager = currentNotification;
+                        for(auto currentUser : currentNotification.pendingUsers)
+                        {
+                            if(currentUser == pf.getUsername() )
+                            {
+                                Communication::sendPacket(socketDescriptor, createPacket(NOTIFICATION, 0, time(0), currentNotification.senderUser));
+                                Communication::sendPacket(socketDescriptor, createPacket(NOTIFICATION, 1, time(0), currentNotification.message));
+                                std::cout << "Sending to user "<< currentUser << " on socket " << socketDescriptor << " a pending notification..." << std::endl;
+                                notificationManager.pendingUsers.remove(currentUser);
+                            }
+                        }
+
+                        if(notificationManager.pendingUsers.size()>0)
+                        {
+                            pendingNotificationsList.push_back(notificationManager);
+                        }
+		            }
+		        }
             }
 
             if (packet.type == LOGOFF)
@@ -201,7 +202,7 @@ void *commandReceiverThread(void *args)
                 // encerra a thread
                 std::cout << "Profile " << packet.payload << " logged off (socket " << socketDescriptor << ")" << std::endl;
 
-        	onlineUsersMap.erase(pf.getUsername());
+        	    onlineUsersMap.erase(pf.getUsername());
                 break;
             }
 
@@ -223,39 +224,37 @@ void *commandReceiverThread(void *args)
                         Communication::sendPacket(onlineUsersMap.at(userToReceiveNotification), createPacket(NOTIFICATION, 0, time(0), pf.getUsername()));
                         Communication::sendPacket(onlineUsersMap.at(userToReceiveNotification), createPacket(NOTIFICATION, 1, time(0), packet.payload));
                         std::cout << "Sending to user "<< userToReceiveNotification << " on socket " << onlineUsersMap.at(userToReceiveNotification) << " a notification..." << std::endl;
-                    }else
-			ntf.pendingUsers.push_back(userToReceiveNotification);
+                    }
+                    else
+                    {
+			            ntf.pendingUsers.push_back(userToReceiveNotification);
+                    }
                 }
 
             	if( ntf.pendingUsers.size() > 0 )
             	{
-                // armazena a notificação na lista de espera
-                pendingNotificationsList.push_back(ntf);
-		}
+                    // armazena a notificação na lista de espera
+                    pendingNotificationsList.push_back(ntf);
+                }
             }
 
             if (packet.type == FOLLOW)
             {
-                std::string payloadExtract = (std::string) packet.payload;
-                std::string usernameExtract = payloadExtract.substr(0,payloadExtract.find(':'));
-                std::string followExtract = payloadExtract.substr(payloadExtract.find(':')+1, payloadExtract.size()-1);
-                std::cout << std::endl << followExtract << std::endl;
-
-                if ( pf.getUsername() == followExtract )
+                if ( pf.getUsername() == packet.payload )
                 {
                     std::string msgError( "Users can't follow themselves\n" );
                     replyPacket = createPacket(ERROR, 0, time(0), msgError);
                 }
-                else if ( !pfManager.user_exists(followExtract) )
+                else if ( !pfManager.user_exists(packet.payload) )
                 {
                     std::string msgError( "User does not exist\n" );
                     replyPacket = createPacket(ERROR, 0, time(0), msgError);
                 }
                 else
                 {
-                    std::cout << "User " << pf.getUsername() << " is now following " << followExtract << std::endl;
+                    std::cout << "User " << pf.getUsername() << " is now following " << packet.payload << std::endl;
                     replyPacket = createPacket(REPLY_FOLLOW, 0, time(0), "OK!\n");
-                    pfManager.follow_user(pf.getUsername(), followExtract);
+                    pfManager.follow_user(pf.getUsername(), packet.payload);
                 }
 
                 std::string name = pf.getUsername();

@@ -89,7 +89,7 @@ int Client::login()
     {
         packet = createPacket(LOGIN, 0, time(0), _profile);
         int bytesWritten = Communication::sendPacket(_ntfSocketDescriptor, packet);
-	
+
         std::cout << "Logging in as " << packet.payload << " on notification socket " << _ntfSocketDescriptor << " ... ";
 
         if (bytesWritten > 0)
@@ -97,7 +97,7 @@ int Client::login()
             std::cout << "Login packet sent." << std::endl;
         }
 
-	bytesWritten = Communication::sendPacket(_cmdSocketDescriptor, createPacket(LOGIN, 1, time(0), _profile));
+        bytesWritten = Communication::sendPacket(_cmdSocketDescriptor, createPacket(LOGIN, 1, time(0), _profile));
 
         std::cout << "Logging in as " << packet.payload << " on command socket " << _cmdSocketDescriptor << " ... ";
 
@@ -118,7 +118,7 @@ int Client::login()
             std::cout << "Server response for notification thread: " << packet.payload << std::endl;
         }
 
-	bytesRead = Communication::receivePacket(_cmdSocketDescriptor, &packet);
+        bytesRead = Communication::receivePacket(_cmdSocketDescriptor, &packet);
 
         if (bytesRead > 0)
         {
@@ -145,8 +145,8 @@ int Client::logoff()
             std::cout << "OK!" << std::endl;
         }
 
-	std::cout << "Logging off command thread of " << packet.payload << " ... ";
-	bytesWritten = Communication::sendPacket(_cmdSocketDescriptor, packet);
+        std::cout << "Logging off command thread of " << packet.payload << " ... ";
+        bytesWritten = Communication::sendPacket(_cmdSocketDescriptor, packet);
         if (bytesWritten > 0)
         {
             std::cout << "OK!" << std::endl;
@@ -230,11 +230,14 @@ void* ntf_thread(void* args)
         }
         else if ( pkt.type == NOTIFICATION )
         {
-	    if(pkt.sequenceNumber == 0)
-        	std::cout << "<" << pkt.timestamp << "> "<< pkt.payload << ": ";
-	    else
-		std::cout << pkt.payload << std::endl;	
-    
+            if( pkt.sequenceNumber == 0 )
+            {
+                std::cout << "<" << pkt.timestamp << "> "<< pkt.payload << ": ";
+            }
+            else
+            {
+                std::cout << pkt.payload << std::endl;
+            }
         }
     }
 
@@ -256,9 +259,9 @@ void* cmd_thread(void* args)
         if (interrupted || message == "EXIT" || message == "exit")
         {
             // encerra a thread
-	    cli.logoff();
-	    signal(SIGINT, sigint_handler);
-	    raise(SIGINT);
+            cli.logoff();
+            signal(SIGINT, sigint_handler);
+            raise(SIGINT);
             break;
         }
 
