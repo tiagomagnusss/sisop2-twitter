@@ -166,7 +166,9 @@ void *commandReceiverThread(void *args)
                 std::cout << "Approved login of " << packet.payload << " on socket " << socketDescriptor << std::endl;
                 bytesWritten = Communication::sendPacket(socketDescriptor, replyPacket);
 
-                onlineUsersMap.insert(std::pair<std::string, int>(pf.getUsername(), socketDescriptor));
+		if(packet.sequenceNumber == 0)
+                   onlineUsersMap.insert(std::pair<std::string, int>(pf.getUsername(), socketDescriptor));
+
                 std::cout << "socket " << pf.getUsername() << onlineUsersMap.at(pf.getUsername()) << " online " << std::endl;
             }
 
@@ -181,16 +183,13 @@ void *commandReceiverThread(void *args)
 
             if (packet.type == SEND)
             {
-                std::string payloadExtract = (std::string) packet.payload;
-                std::string usernameExtract = payloadExtract.substr(0,payloadExtract.find(':'));
-                std::cout << "Profile " << usernameExtract << " sent " << packet.payload << std::endl;
+                std::cout << "Profile " << pf.getUsername() << " sent " << packet.payload << std::endl;
 
                 replyPacket = createPacket(REPLY_SEND, 0, time(0), "Command SEND received!\n");
-                std::cout << "Replying to SEND command... ";
+                std::cout << "Replying to SEND command... \n";
                 bytesWritten = Communication::sendPacket(socketDescriptor, replyPacket);
 
-                pf = pf.get_user(usernameExtract);
-                ntf = setNotification(payloadExtract, pf.followers); //cria a notificação
+                ntf = setNotification(packet.payload, pf.followers); //cria a notificação
 
                 for (auto userToReceiveNotification : pf.followers)
                 {

@@ -91,6 +91,9 @@ int Client::login()
     {
         packet = createPacket(LOGIN, 0, time(0), _profile);
         int bytesWritten = Communication::sendPacket(_ntfSocketDescriptor, packet);
+	packet = createPacket(LOGIN, 1, time(0), _profile);
+        Communication::sendPacket(_cmdSocketDescriptor, packet);
+	
         std::cout << "Logging in as " << packet.payload << " ... ";
 
         if (bytesWritten > 0)
@@ -195,7 +198,7 @@ void* ntf_thread(void* args)
 
     while( !interrupted )
     {
-        sleep(5);
+        //sleep(5);
         Communication::receivePacket(socketId, &pkt, true);
 
         // server encerrando a conexão
@@ -238,9 +241,6 @@ void* cmd_thread(void* args)
             std::cout << result.second << std::endl;
             continue;
         }
-
-        result.second.insert(0,1,':');
-        result.second.insert(0,cli.get_profile()); //adiciona o usuário no começo da string
 
         // faz o send
         bytesWritten = Communication::sendPacket(socketId, createPacket(result.first, 0, 1234, result.second));
