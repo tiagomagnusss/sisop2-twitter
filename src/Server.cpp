@@ -135,12 +135,14 @@ void *commandReceiverThread(void *args)
     int socketDescriptor = *((int *)args);
     int bytesRead, bytesWritten;
 
+    Packet packet;
+    Packet replyPacket;
+    Profile pf;
+    Notification ntf;
+
     while (true)
     {
-        Packet packet;
-        Packet replyPacket;
-        Profile pf;
-        Notification ntf;
+
         bytesWritten = 0;
         bytesRead = 0;
         if (interrupted)
