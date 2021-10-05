@@ -161,6 +161,7 @@ std::string read_input();
 Client cli;
 ClientUI userInterface;
 
+
 int main(int argc, char *argv[])
 {
     if (argc != 4)
@@ -185,19 +186,21 @@ int main(int argc, char *argv[])
         fprintf(stderr, "Invald port. Must be a number between 0 and 65535.\n");
         exit(INVALID_PORT);
     }
+    userInterface.setProfile(profile);
+    userInterface.buildWindows();
 
     cli.init(profile, serverAddress, serverPort);
     signal(SIGINT, SIG_DFL);
 
     cli.login();
 
-    userInterface.setProfile(profile);
-    userInterface.buildWindows();
+    
+    
 
     pthread_t ntf_thd, cmd_thd;
-    pthread_create(&ntf_thd, NULL, ntf_thread, NULL);
+    
     pthread_create(&cmd_thd, NULL, cmd_thread, NULL);
-
+    pthread_create(&ntf_thd, NULL, ntf_thread, NULL);
     pthread_join(cmd_thd, NULL);    
     pthread_join(ntf_thd, NULL);
 
@@ -210,12 +213,13 @@ void *ntf_thread(void *args)
 {
     int socketId = cli.get_ntf_socket();
     Packet pkt;
+    Notification notification;
 
     while (!interrupted)
     {
         //sleep(5);
         Communication::receivePacket(socketId, &pkt, true);
-        Notification notification;
+        
 
         // server encerrando a conexão
         if (pkt.type == SERVER_HALT)
@@ -226,19 +230,17 @@ void *ntf_thread(void *args)
         {
             if (pkt.sequenceNumber == 0)
             {
-
-                notification.senderUser = pkt.payload;
                 notification.timestamp = pkt.timestamp;
-                //std::cout << "<" << pkt.timestamp << "> "<< pkt.payload << ": ";
+                notification.senderUser = pkt.payload;
+                
             }
             else
             {
                 notification.message = pkt.payload;
-                
                 userInterface.addNotification(notification);
-                //std::cout << pkt.payload << std::endl;
             }
         }
+        
     }
 
     return NULL;

@@ -120,7 +120,8 @@ int main(int argc, char *argv[])
     Server server(port, maxConnections);
     // TODO: habilitar quando parar de debugar
     // como a leitura é bloqueante na thread, o processo só itera quando receber algo
-    // signal(SIGINT, sigint_handler);
+    //signal(SIGINT, sigint_handler);
+    
 
     pfManager.loadProfiles();
     server.startServing();

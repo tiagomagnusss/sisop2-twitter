@@ -197,6 +197,8 @@ void ClientUI::printNotifications()
             wclrtoeol(notiWnd);
             wprintw(notiWnd, dateTime);
             wprintw(notiWnd, " ");
+            wprintw(notiWnd, notification.senderUser.c_str());
+            wprintw(notiWnd, ": ");
             wprintw(notiWnd, notification.message.c_str());
             wprintw(notiWnd, "\n");
             i++;
