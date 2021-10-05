@@ -30,7 +30,7 @@ class Client
 {
 private:
 
-    std::string _profile;
+    std::string _profile, _serverAddress, _serverPort;
     int _cmdSocketDescriptor;
     int _ntfSocketDescriptor;
 

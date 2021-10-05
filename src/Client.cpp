@@ -37,8 +37,8 @@ void Client::init(std::string profile, std::string serverAddress, std::string se
     _cmdSocketDescriptor = createSocket();
     _ntfSocketDescriptor = createSocket();
 
-    connectToServer(_ntfSocketDescriptor, serverAddress, serverPort);
-    connectToServer(_cmdSocketDescriptor, serverAddress, serverPort);
+    _serverAddress = serverAddress;
+    _serverPort = serverPort;
 }
 
 int Client::createSocket()
@@ -96,22 +96,44 @@ int Client::get_cmd_socket()
 int Client::login()
 {
     Packet packet;
-
+    int retValue = 0;
     int bytesWritten = 0;
 
+    Communication::receivePacket(_ntfSocketDescriptor, &packet, true);
+    connectToServer(_ntfSocketDescriptor, _serverAddress, _serverPort);
     bytesWritten = Communication::sendPacket(_ntfSocketDescriptor, createPacket(LOGIN, 0, time(0), _profile));
     if (bytesWritten < 0)
         return -1;
-    Communication::receivePacket(_ntfSocketDescriptor, &packet);
 
+    Communication::receivePacket(_cmdSocketDescriptor, &packet, true);
+    if ( packet.type == ERROR )
+    {
+        retValue = -1;
+    }
+    else
+    {
+        retValue++;
+    }
+
+    sleep(1);
     bytesWritten = 0;
-
+    connectToServer(_cmdSocketDescriptor, _serverAddress, _serverPort);
+    Communication::receivePacket(_cmdSocketDescriptor, &packet, true);
     bytesWritten = Communication::sendPacket(_cmdSocketDescriptor, createPacket(LOGIN, 1, time(0), _profile));
     if (bytesWritten < 0)
         return -1;
-    Communication::receivePacket(_cmdSocketDescriptor, &packet);
 
-    return 0;
+    Communication::receivePacket(_cmdSocketDescriptor, &packet, true);
+    if ( packet.type == ERROR )
+    {
+        retValue = -1;
+    }
+    else
+    {
+        retValue++;
+    }
+
+    return retValue;
 }
 
 int Client::logoff()
@@ -170,15 +192,16 @@ int main(int argc, char *argv[])
     userInterface.buildWindows();
 
     cli.init(profile, serverAddress, serverPort);
-
-    // quik mathz
-    std::cout.flush();
-    sleep(1);
-
     signal(SIGINT, sigint_handler);
 
-    if (cli.login() < 0){
+    int loginResult = cli.login();
+    if ( loginResult < 0){
         fprintf(stderr, "An error has occured attempting to login.\n");
+        exit(LOGIN_ERROR);
+    }
+    else if ( loginResult < 2 )
+    {
+        fprintf(stderr, "Two users are already connected to this account. Please wait and try again.\n");
         exit(LOGIN_ERROR);
     }
 
@@ -241,9 +264,7 @@ void *cmd_thread(void *args)
         if (interrupted || message == "EXIT" || message == "exit")
         {
             // encerra a thread
-
             raise(SIGINT);
-
             break;
         }
 

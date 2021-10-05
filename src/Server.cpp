@@ -145,26 +145,13 @@ void *commandReceiverThread(void *args)
     Profile* pf;
     Notification ntf;
 
-    while (!interrupted)
+    while(true)
     {
+        bytesWritten = Communication::sendPacket(socketDescriptor, createPacket(LOGIN, 0, 0, std::string("Requesting login")));
 
-        bytesWritten = 0;
-        bytesRead = 0;
-        if (interrupted)
+        if ( bytesWritten > 0 )
         {
-            // Notifica que o server vai desconectar
-            Communication::sendPacket(socketDescriptor, createPacket(SERVER_HALT, 0, 0, std::string()));
-            break;
-        }
-
-        // LEITURA BLOQUEANTE
-        // só vai permitir encerrar ou fazer outros processamentos quando receber algo
-        bytesRead = Communication::receivePacket(socketDescriptor, &packet);
-
-        if (bytesRead > 0)
-        {
-            //std::cout << "Payload size: " << packet.payloadLength << std::endl;
-            std::cout << "Received package with payload: (" << getPacketTypeName(packet.type) << ") " << packet.payload << std::endl;
+            bytesRead = Communication::receivePacket(socketDescriptor, &packet);
 
             if (packet.type == LOGIN)
             {
@@ -204,7 +191,30 @@ void *commandReceiverThread(void *args)
                         }
                     }
                 }
+
+                break;
             }
+        }
+    }
+
+    while (!interrupted)
+    {
+        bytesWritten = 0;
+        bytesRead = 0;
+        if (interrupted)
+        {
+            // Notifica que o server vai desconectar
+            Communication::sendPacket(socketDescriptor, createPacket(SERVER_HALT, 0, 0, std::string()));
+            break;
+        }
+
+        // LEITURA BLOQUEANTE
+        // só vai permitir encerrar ou fazer outros processamentos quando receber algo
+        bytesRead = Communication::receivePacket(socketDescriptor, &packet);
+        if (bytesRead > 0)
+        {
+            //std::cout << "Payload size: " << packet.payloadLength << std::endl;
+            std::cout << "Received package with payload: (" << getPacketTypeName(packet.type) << ") " << packet.payload << std::endl;
 
             if (packet.type == LOGOFF)
             {
