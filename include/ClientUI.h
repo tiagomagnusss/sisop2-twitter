@@ -33,7 +33,7 @@ private:
 
 public:
     ClientUI();
-    void buildWindows();
+    bool buildWindows();
     void setProfile(string profile);
     string waitCommand();
     void addNotification(Notification newNotification);
