@@ -28,7 +28,7 @@ void ClientUI::setProfile(string profile)
     this->profile = profile;
 }
 
-void ClientUI::buildWindows()
+bool ClientUI::buildWindows()
 {
     int wRow, cRow;
     if (row >= 30 && col >= 100)
@@ -66,11 +66,12 @@ void ClientUI::buildWindows()
 
         wprintw(rtnWnd, "Login successuful.");
         wrefresh(rtnWnd);
+	
+	return true;
     }
     else
     {
-        cout << "Console window too small! Must be at least 100x30." << endl;
-        exit(1);
+        return false;
     }
 }
 

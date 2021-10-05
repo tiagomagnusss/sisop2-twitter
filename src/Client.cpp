@@ -189,15 +189,21 @@ int main(int argc, char *argv[])
     }
 
     userInterface.setProfile(profile);
-    userInterface.buildWindows();
+    if(userInterface.buildWindows()==false)
+    {
+	cout << "Console window too small! Must be at least 100x30." << endl;
+        signal(SIGINT, SIG_DFL);
+	raise(SIGINT);
+    }
 
     cli.init(profile, serverAddress, serverPort);
     signal(SIGINT, sigint_handler);
 
     int loginResult = cli.login();
-    if ( loginResult < 0){
+    if (loginResult < 0){
         fprintf(stderr, "An error has occured attempting to login.\n");
-        exit(LOGIN_ERROR);
+        signal(SIGINT, SIG_DFL);
+	raise(SIGINT);
     }
     else if ( loginResult < 2 )
     {
