@@ -10,6 +10,7 @@
 #define INVALID_SERVER 6
 #define INVALID_PORT 7
 #define GENERAL_ERROR 8
+#define LOGIN_ERROR 9
 
 #include "Packet.h"
 #include "Communication.h"

@@ -27,6 +27,7 @@
 *.so
 *.so.*
 *.dylib
+.vscode/
 
 # Executables
 *.exe
@@ -54,3 +55,4 @@ dkms.conf
 # bin obj folder
 bin/
 obj/
+.vscode/settings.json

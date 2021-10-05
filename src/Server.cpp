@@ -2,7 +2,7 @@
 #include "../include/Profile.h"
 
 std::list<Notification> pendingNotificationsList;
-std::map<std::string , int> onlineUsersMap;
+std::map<std::string, int> onlineUsersMap;
 
 bool interrupted = false;
 Profile pfManager = Profile();
@@ -88,7 +88,8 @@ void Server::startServing()
     std::list<pthread_t> threadList = std::list<pthread_t>();
     while (true)
     {
-        if ( interrupted ) break;
+        if (interrupted)
+            break;
 
         // TODO: aceitar conexão de notificação e de comandos ao mesmo tempo
         int connectionSocketDescriptor = acceptConnection();
@@ -121,7 +122,6 @@ int main(int argc, char *argv[])
     // TODO: habilitar quando parar de debugar
     // como a leitura é bloqueante na thread, o processo só itera quando receber algo
     //signal(SIGINT, sigint_handler);
-    
 
     pfManager.loadProfiles();
     server.startServing();
@@ -135,15 +135,15 @@ void *commandReceiverThread(void *args)
     int socketDescriptor = *((int *)args);
     int bytesRead, bytesWritten;
 
-    Packet packet;
-    Packet replyPacket;
-    Profile pf;
-    Notification ntf;
-
     while (true)
     {
+        Packet packet;
+        Packet replyPacket;
+        Profile pf;
+        Notification ntf;
         bytesWritten = 0;
-        if ( interrupted )
+        bytesRead = 0;
+        if (interrupted)
         {
             // Notifica que o server vai desconectar
             Communication::sendPacket(socketDescriptor, createPacket(SERVER_HALT, 0, 0, std::string()));
@@ -165,37 +165,38 @@ void *commandReceiverThread(void *args)
 
                 replyPacket = createPacket(REPLY_LOGIN, 0, time(0), "Login OK!");
                 std::cout << "Approved login of " << packet.payload << " on socket " << socketDescriptor << std::endl;
+
                 bytesWritten = Communication::sendPacket(socketDescriptor, replyPacket);
 
-                if(packet.sequenceNumber == 0)
+                if (packet.sequenceNumber == 0)
                 {
                     onlineUsersMap.insert(std::pair<std::string, int>(pf.getUsername(), socketDescriptor));
-                    std::cout << "User " << pf.getUsername() << " on socket " << onlineUsersMap.at(pf.getUsername()) << " is online and ready to receive notifications"  << std::endl;
+                    std::cout << "User " << pf.getUsername() << " on socket " << onlineUsersMap.at(pf.getUsername()) << " is online and ready to receive notifications" << std::endl;
 
                     Notification notificationManager;
                     std::list<Notification> instanceForPendingNotificationsList = pendingNotificationsList;
 
-                    for(auto currentNotification : instanceForPendingNotificationsList)
+                    for (auto currentNotification : instanceForPendingNotificationsList)
                     {
                         pendingNotificationsList.pop_front();
                         notificationManager = currentNotification;
-                        for(auto currentUser : currentNotification.pendingUsers)
+                        for (auto currentUser : currentNotification.pendingUsers)
                         {
-                            if(currentUser == pf.getUsername() )
+                            if (currentUser == pf.getUsername())
                             {
                                 Communication::sendPacket(socketDescriptor, createPacket(NOTIFICATION, 0, time(0), currentNotification.senderUser));
                                 Communication::sendPacket(socketDescriptor, createPacket(NOTIFICATION, 1, time(0), currentNotification.message));
-                                std::cout << "Sending to user "<< currentUser << " on socket " << socketDescriptor << " a pending notification..." << std::endl;
+                                std::cout << "Sending to user " << currentUser << " on socket " << socketDescriptor << " a pending notification..." << std::endl;
                                 notificationManager.pendingUsers.remove(currentUser);
                             }
                         }
 
-                        if(notificationManager.pendingUsers.size()>0)
+                        if (notificationManager.pendingUsers.size() > 0)
                         {
                             pendingNotificationsList.push_back(notificationManager);
                         }
-		            }
-		        }
+                    }
+                }
             }
 
             if (packet.type == LOGOFF)
@@ -203,7 +204,7 @@ void *commandReceiverThread(void *args)
                 // encerra a thread
                 std::cout << "Profile " << packet.payload << " logged off (socket " << socketDescriptor << ")" << std::endl;
 
-        	    onlineUsersMap.erase(pf.getUsername());
+                onlineUsersMap.erase(pf.getUsername());
                 break;
             }
 
@@ -220,20 +221,20 @@ void *commandReceiverThread(void *args)
                 for (auto userToReceiveNotification : pf.followers)
                 {
                     std::cout << "this is user " << userToReceiveNotification << std::endl;
-                    if(onlineUsersMap.find(userToReceiveNotification) != onlineUsersMap.end())
+                    if (onlineUsersMap.find(userToReceiveNotification) != onlineUsersMap.end())
                     {
                         Communication::sendPacket(onlineUsersMap.at(userToReceiveNotification), createPacket(NOTIFICATION, 0, time(0), pf.getUsername()));
                         Communication::sendPacket(onlineUsersMap.at(userToReceiveNotification), createPacket(NOTIFICATION, 1, time(0), packet.payload));
-                        std::cout << "Sending to user "<< userToReceiveNotification << " on socket " << onlineUsersMap.at(userToReceiveNotification) << " a notification..." << std::endl;
+                        std::cout << "Sending to user " << userToReceiveNotification << " on socket " << onlineUsersMap.at(userToReceiveNotification) << " a notification..." << std::endl;
                     }
                     else
                     {
-			            ntf.pendingUsers.push_back(userToReceiveNotification);
+                        ntf.pendingUsers.push_back(userToReceiveNotification);
                     }
                 }
 
-            	if( ntf.pendingUsers.size() > 0 )
-            	{
+                if (ntf.pendingUsers.size() > 0)
+                {
                     // armazena a notificação na lista de espera
                     pendingNotificationsList.push_back(ntf);
                 }
@@ -241,14 +242,14 @@ void *commandReceiverThread(void *args)
 
             if (packet.type == FOLLOW)
             {
-                if ( pf.getUsername() == packet.payload )
+                if (pf.getUsername() == packet.payload)
                 {
-                    std::string msgError( "Users can't follow themselves\n" );
+                    std::string msgError("Users can't follow themselves\n");
                     replyPacket = createPacket(ERROR, 0, time(0), msgError);
                 }
-                else if ( !pfManager.user_exists(packet.payload) )
+                else if (!pfManager.user_exists(packet.payload))
                 {
-                    std::string msgError( "User does not exist\n" );
+                    std::string msgError("User does not exist\n");
                     replyPacket = createPacket(ERROR, 0, time(0), msgError);
                 }
                 else
@@ -262,13 +263,16 @@ void *commandReceiverThread(void *args)
                 // atualiza os usuários
                 pfManager.saveProfiles();
                 pfManager.loadProfiles();
-                pf = pfManager.get_user( name );
+                pf = pfManager.get_user(name);
 
                 bytesWritten = Communication::sendPacket(socketDescriptor, replyPacket);
             }
 
-            if ( bytesWritten > 0 ) std::cout << "OK!" << std::endl;
+            if (bytesWritten > 0)
+                std::cout << "OK!" << std::endl;
         }
+        else
+            continue;
     }
 
     std::cout << "Shutting down thread on socket " << socketDescriptor << std::endl;

@@ -57,5 +57,13 @@
         "functional": "cpp",
         "numeric": "cpp",
         "valarray": "cpp"
-    }
+    },
+    "C_Cpp.default.configurationProvider": "ms-vscode.makefile-tools",
+    "makefile.launchConfigurations": [
+        {
+            "cwd": "/home/ajc/sisop2/sisop2-twitter/bin",
+            "binaryPath": "/home/ajc/sisop2/sisop2-twitter/bin/app_server",
+            "binaryArgs": []
+        }
+    ]
 }

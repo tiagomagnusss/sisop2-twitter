@@ -1,12 +1,15 @@
 [
   {
     "followers": [],
-    "following": [],
+    "following": [
+      "@ajcosta"
+    ],
     "username": ""
   },
   {
     "followers": [
-      "@batata"
+      "@batata",
+      ""
     ],
     "following": [
       "@batata"

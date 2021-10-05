@@ -6,6 +6,8 @@ char _regexProfile[20] = "@[a-zA-Z0-9_]{3,19}";
 void *ntf_thread(void *args);
 void *cmd_thread(void *args);
 
+ClientUI userInterface;
+
 void sigint_handler(int signum)
 {
     interrupted = true;
@@ -86,46 +88,26 @@ int Client::login()
 {
     Packet packet;
 
-    while (true)
-    {
-        packet = createPacket(LOGIN, 0, time(0), _profile);
-        int bytesWritten = Communication::sendPacket(_ntfSocketDescriptor, packet);
+    int bytesWritten = 0;
+    int bytesRead = 0;
 
-        //std::cout << "Logging in as " << packet.payload << " on notification socket " << _ntfSocketDescriptor << " ... ";
+    bytesWritten = Communication::sendPacket(_ntfSocketDescriptor, createPacket(LOGIN, 0, time(0), _profile));
+    if (bytesWritten < 0)
+        return -1;
+    bytesRead = Communication::receivePacket(_ntfSocketDescriptor, &packet);
+    if (bytesRead < 0)
+        return -1;
 
-        if (bytesWritten > 0)
-        {
-            //std::cout << "Login packet sent." << std::endl;
-        }
+    bytesWritten = 0;
+    bytesRead = 0;
 
-        bytesWritten = Communication::sendPacket(_cmdSocketDescriptor, createPacket(LOGIN, 1, time(0), _profile));
+    bytesWritten = Communication::sendPacket(_cmdSocketDescriptor, createPacket(LOGIN, 1, time(0), _profile));
+    if (bytesWritten < 0)
+        return -1;
+    bytesRead = Communication::receivePacket(_cmdSocketDescriptor, &packet);
+    if (bytesRead < 0)
+        return -1;
 
-        //std::cout << "Logging in as " << packet.payload << " on command socket " << _cmdSocketDescriptor << " ... ";
-
-        if (bytesWritten > 0)
-        {
-            //std::cout << "Login packet sent." << std::endl;
-            break;
-        }
-    }
-
-    while (true)
-    {
-        int bytesRead = Communication::receivePacket(_ntfSocketDescriptor, &packet);
-
-        if (bytesRead > 0)
-        {
-            //std::cout << "Server response for notification thread: " << packet.payload << std::endl;
-        }
-
-        bytesRead = Communication::receivePacket(_cmdSocketDescriptor, &packet);
-
-        if (bytesRead > 0)
-        {
-            //std::cout << "Server response for command thread: " << packet.payload << std::endl;
-            break;
-        }
-    }
     return 0;
 }
 
@@ -159,8 +141,6 @@ int Client::logoff()
 std::pair<PacketType, std::string> splitMessage(std::string input);
 std::string read_input();
 Client cli;
-ClientUI userInterface;
-
 
 int main(int argc, char *argv[])
 {
@@ -186,25 +166,25 @@ int main(int argc, char *argv[])
         fprintf(stderr, "Invald port. Must be a number between 0 and 65535.\n");
         exit(INVALID_PORT);
     }
+
     userInterface.setProfile(profile);
     userInterface.buildWindows();
 
     cli.init(profile, serverAddress, serverPort);
+
     signal(SIGINT, SIG_DFL);
 
-    cli.login();
-
-    
-    
+    if (cli.login() < 0){
+        fprintf(stderr, "An error has occured attempting to login.\n");
+        exit(LOGIN_ERROR);
+    }        
 
     pthread_t ntf_thd, cmd_thd;
-    
+
     pthread_create(&cmd_thd, NULL, cmd_thread, NULL);
     pthread_create(&ntf_thd, NULL, ntf_thread, NULL);
-    pthread_join(cmd_thd, NULL);    
+    pthread_join(cmd_thd, NULL);
     pthread_join(ntf_thd, NULL);
-
-    
 
     return 0;
 }
@@ -219,7 +199,6 @@ void *ntf_thread(void *args)
     {
         //sleep(5);
         Communication::receivePacket(socketId, &pkt, true);
-        
 
         // server encerrando a conexão
         if (pkt.type == SERVER_HALT)
@@ -232,7 +211,6 @@ void *ntf_thread(void *args)
             {
                 notification.timestamp = pkt.timestamp;
                 notification.senderUser = pkt.payload;
-                
             }
             else
             {
@@ -240,7 +218,6 @@ void *ntf_thread(void *args)
                 userInterface.addNotification(notification);
             }
         }
-        
     }
 
     return NULL;
