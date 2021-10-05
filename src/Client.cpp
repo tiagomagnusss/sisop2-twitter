@@ -171,12 +171,16 @@ int main(int argc, char *argv[])
 
     cli.init(profile, serverAddress, serverPort);
 
+    // quik mathz
+    std::cout.flush();
+    sleep(1);
+
     signal(SIGINT, sigint_handler);
 
     if (cli.login() < 0){
         fprintf(stderr, "An error has occured attempting to login.\n");
         exit(LOGIN_ERROR);
-    }        
+    }
 
     pthread_t ntf_thd, cmd_thd;
 
@@ -237,7 +241,7 @@ void *cmd_thread(void *args)
         if (interrupted || message == "EXIT" || message == "exit")
         {
             // encerra a thread
-            
+
             raise(SIGINT);
 
             break;
