@@ -6,10 +6,21 @@
   },
   {
     "followers": [
-      "@teste"
+      "@batata"
     ],
     "following": [
-      "@teste"
+      "@batata"
+    ],
+    "username": "@ajcosta"
+  },
+  {
+    "followers": [
+      "@teste",
+      "@ajcosta"
+    ],
+    "following": [
+      "@teste",
+      "@ajcosta"
     ],
     "username": "@batata"
   },

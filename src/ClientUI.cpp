@@ -1,6 +1,8 @@
 #include "../include/ClientUI.h"
 #include <unistd.h> //wait
 
+std::mutex mu;
+
 void *ui_thread(void *args);
 
 WINDOW *ClientUI::createWindow(int height, int width, int starty, int startx, bool border)
@@ -17,8 +19,6 @@ WINDOW *ClientUI::createWindow(int height, int width, int starty, int startx, bo
 ClientUI::ClientUI()
 {
     initscr();
-    raw();
-    keypad(stdscr, TRUE);
     getmaxyx(stdscr, row, col);
     refresh();
 }
@@ -91,19 +91,23 @@ void ClientUI::clearNotifications()
 
 void ClientUI::setReturn(string text)
 {
+    mu.lock();
     wmove(rtnWnd, 0, 0);
     wclrtoeol(rtnWnd);
     wprintw(rtnWnd, text.c_str());
     wrefresh(rtnWnd);
+    mu.unlock();
 }
 
 void ClientUI::setReturn(string text, char payload[MAX_MESSAGE_SIZE])
 {
+    mu.lock();
     wmove(rtnWnd, 0, 0);
     wclrtoeol(rtnWnd);
     wprintw(rtnWnd, text.c_str());
     wprintw(rtnWnd, payload);
     wrefresh(rtnWnd);
+    mu.unlock();
 }
 
 string ClientUI::getCommand(char command[148])
@@ -205,8 +209,10 @@ void ClientUI::printNotifications()
 
 void ClientUI::addNotification(Notification newNotification)
 {
+    mu.lock();
     notificationList.push_front(newNotification);
     printNotifications();
+    mu.unlock();
 }
 
 void ClientUI::closeUI()

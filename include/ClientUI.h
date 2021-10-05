@@ -8,6 +8,7 @@
 #include <string>
 #include <algorithm> // transform
 #include <regex>
+#include <mutex>
 
 #include "../include/ClientUI.h"
 #include "../include/Packet.h"

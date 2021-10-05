@@ -198,12 +198,10 @@ int main(int argc, char *argv[])
     pthread_create(&ntf_thd, NULL, ntf_thread, NULL);
     pthread_create(&cmd_thd, NULL, cmd_thread, NULL);
 
-    pthread_join(cmd_thd, NULL);
-
-    
+    pthread_join(cmd_thd, NULL);    
     pthread_join(ntf_thd, NULL);
 
-    userInterface.closeUI();
+    
 
     return 0;
 }
@@ -264,6 +262,7 @@ void *cmd_thread(void *args)
             cli.logoff();
             signal(SIGINT, sigint_handler);
             raise(SIGINT);
+            userInterface.closeUI();
             break;
         }
 
