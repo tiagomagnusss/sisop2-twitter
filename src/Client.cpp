@@ -8,9 +8,18 @@ void *cmd_thread(void *args);
 
 ClientUI userInterface;
 
+std::pair<PacketType, std::string> splitMessage(std::string input);
+std::string read_input();
+Client cli;
+
 void sigint_handler(int signum)
 {
     interrupted = true;
+
+    cli.logoff();
+    userInterface.closeUI();
+
+    exit(signum);
 }
 
 Client::Client()
@@ -89,24 +98,18 @@ int Client::login()
     Packet packet;
 
     int bytesWritten = 0;
-    int bytesRead = 0;
 
     bytesWritten = Communication::sendPacket(_ntfSocketDescriptor, createPacket(LOGIN, 0, time(0), _profile));
     if (bytesWritten < 0)
         return -1;
-    bytesRead = Communication::receivePacket(_ntfSocketDescriptor, &packet);
-    if (bytesRead < 0)
-        return -1;
+    Communication::receivePacket(_ntfSocketDescriptor, &packet);
 
     bytesWritten = 0;
-    bytesRead = 0;
 
     bytesWritten = Communication::sendPacket(_cmdSocketDescriptor, createPacket(LOGIN, 1, time(0), _profile));
     if (bytesWritten < 0)
         return -1;
-    bytesRead = Communication::receivePacket(_cmdSocketDescriptor, &packet);
-    if (bytesRead < 0)
-        return -1;
+    Communication::receivePacket(_cmdSocketDescriptor, &packet);
 
     return 0;
 }
@@ -138,10 +141,6 @@ int Client::logoff()
     close(_cmdSocketDescriptor);
 }
 
-std::pair<PacketType, std::string> splitMessage(std::string input);
-std::string read_input();
-Client cli;
-
 int main(int argc, char *argv[])
 {
     if (argc != 4)
@@ -172,7 +171,7 @@ int main(int argc, char *argv[])
 
     cli.init(profile, serverAddress, serverPort);
 
-    signal(SIGINT, SIG_DFL);
+    signal(SIGINT, sigint_handler);
 
     if (cli.login() < 0){
         fprintf(stderr, "An error has occured attempting to login.\n");
@@ -238,10 +237,9 @@ void *cmd_thread(void *args)
         if (interrupted || message == "EXIT" || message == "exit")
         {
             // encerra a thread
-            cli.logoff();
-            signal(SIGINT, sigint_handler);
+            
             raise(SIGINT);
-            userInterface.closeUI();
+
             break;
         }
 

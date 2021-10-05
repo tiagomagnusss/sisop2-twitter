@@ -22,7 +22,7 @@ class Profile
 
         void create_user(std::string username);
         bool user_exists(std::string username);
-        Profile get_user(std::string username);
+        Profile* get_user(std::string username);
         std::string getUsername();
 
         void follow_user(std::string username, std::string follow);

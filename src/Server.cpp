@@ -4,13 +4,17 @@
 std::list<Notification> pendingNotificationsList;
 std::map<std::string, int> onlineUsersMap;
 
-bool interrupted = false;
+static volatile bool interrupted = false;
 Profile pfManager = Profile();
 
 void sigint_handler(int signum)
 {
-    std::cout << "Interrupt received" << std::endl;
+    std::cout << "\nInterrupt received" << std::endl;
+
     interrupted = true;
+    pfManager.saveProfiles();
+
+    exit(signum);
 }
 
 Server::Server(int port, int maxConnections)
@@ -86,11 +90,8 @@ int Server::acceptConnection()
 void Server::startServing()
 {
     std::list<pthread_t> threadList = std::list<pthread_t>();
-    while (true)
+    while (!interrupted)
     {
-        if (interrupted)
-            break;
-
         // TODO: aceitar conexão de notificação e de comandos ao mesmo tempo
         int connectionSocketDescriptor = acceptConnection();
         std::cout << "New connection received!\n";
@@ -114,6 +115,8 @@ int main(int argc, char *argv[])
         exit(FAILURE_LISTEN);
     }
 
+    std::signal(SIGINT, sigint_handler);
+
     // Tratar erro
     int port = atoi(argv[1]);
     int maxConnections = atoi(argv[2]);
@@ -125,8 +128,10 @@ int main(int argc, char *argv[])
 
     pfManager.loadProfiles();
     server.startServing();
+    pfManager.saveProfiles();
 
     std::cout << "Stopped serving, shutting down server..." << std::endl;
+
     return 0;
 }
 
@@ -137,10 +142,10 @@ void *commandReceiverThread(void *args)
 
     Packet packet;
     Packet replyPacket;
-    Profile pf;
+    Profile* pf;
     Notification ntf;
 
-    while (true)
+    while (!interrupted)
     {
 
         bytesWritten = 0;
@@ -172,8 +177,8 @@ void *commandReceiverThread(void *args)
 
                 if (packet.sequenceNumber == 0)
                 {
-                    onlineUsersMap.insert(std::pair<std::string, int>(pf.getUsername(), socketDescriptor));
-                    std::cout << "User " << pf.getUsername() << " on socket " << onlineUsersMap.at(pf.getUsername()) << " is online and ready to receive notifications" << std::endl;
+                    onlineUsersMap.insert(std::pair<std::string, int>(pf->getUsername(), socketDescriptor));
+                    std::cout << "User " << pf->getUsername() << " on socket " << onlineUsersMap.at(pf->getUsername()) << " is online and ready to receive notifications" << std::endl;
 
                     Notification notificationManager;
                     std::list<Notification> instanceForPendingNotificationsList = pendingNotificationsList;
@@ -184,7 +189,7 @@ void *commandReceiverThread(void *args)
                         notificationManager = currentNotification;
                         for (auto currentUser : currentNotification.pendingUsers)
                         {
-                            if (currentUser == pf.getUsername())
+                            if (currentUser == pf->getUsername())
                             {
                                 Communication::sendPacket(socketDescriptor, createPacket(NOTIFICATION, 0, time(0), currentNotification.senderUser));
                                 Communication::sendPacket(socketDescriptor, createPacket(NOTIFICATION, 1, time(0), currentNotification.message));
@@ -206,26 +211,26 @@ void *commandReceiverThread(void *args)
                 // encerra a thread
                 std::cout << "Profile " << packet.payload << " logged off (socket " << socketDescriptor << ")" << std::endl;
 
-                onlineUsersMap.erase(pf.getUsername());
+                onlineUsersMap.erase(pf->getUsername());
                 break;
             }
 
             if (packet.type == SEND)
             {
-                std::cout << "Profile " << pf.getUsername() << " sent: " << packet.payload << std::endl;
+                std::cout << "Profile " << pf->getUsername() << " sent: " << packet.payload << std::endl;
 
                 replyPacket = createPacket(REPLY_SEND, 0, time(0), "Command SEND received!");
                 std::cout << "Replying to SEND command... \n";
                 bytesWritten = Communication::sendPacket(socketDescriptor, replyPacket);
 
-                ntf = setNotification(pf.getUsername(), packet.payload); //cria a notificação
+                ntf = setNotification(pf->getUsername(), packet.payload); //cria a notificação
 
-                for (auto userToReceiveNotification : pf.followers)
+                for (auto userToReceiveNotification : pf->followers)
                 {
                     std::cout << "this is user " << userToReceiveNotification << std::endl;
                     if (onlineUsersMap.find(userToReceiveNotification) != onlineUsersMap.end())
                     {
-                        Communication::sendPacket(onlineUsersMap.at(userToReceiveNotification), createPacket(NOTIFICATION, 0, time(0), pf.getUsername()));
+                        Communication::sendPacket(onlineUsersMap.at(userToReceiveNotification), createPacket(NOTIFICATION, 0, time(0), pf->getUsername()));
                         Communication::sendPacket(onlineUsersMap.at(userToReceiveNotification), createPacket(NOTIFICATION, 1, time(0), packet.payload));
                         std::cout << "Sending to user " << userToReceiveNotification << " on socket " << onlineUsersMap.at(userToReceiveNotification) << " a notification..." << std::endl;
                     }
@@ -244,7 +249,7 @@ void *commandReceiverThread(void *args)
 
             if (packet.type == FOLLOW)
             {
-                if (pf.getUsername() == packet.payload)
+                if (pf->getUsername() == packet.payload)
                 {
                     std::string msgError("Users can't follow themselves\n");
                     replyPacket = createPacket(ERROR, 0, time(0), msgError);
@@ -256,16 +261,10 @@ void *commandReceiverThread(void *args)
                 }
                 else
                 {
-                    std::cout << "User " << pf.getUsername() << " is now following " << packet.payload << std::endl;
+                    std::cout << "User " << pf->getUsername() << " is now following " << packet.payload << std::endl;
                     replyPacket = createPacket(REPLY_FOLLOW, 0, time(0), "OK!\n");
-                    pfManager.follow_user(pf.getUsername(), packet.payload);
+                    pfManager.follow_user(pf->getUsername(), packet.payload);
                 }
-
-                std::string name = pf.getUsername();
-                // atualiza os usuários
-                pfManager.saveProfiles();
-                pfManager.loadProfiles();
-                pf = pfManager.get_user(name);
 
                 bytesWritten = Communication::sendPacket(socketDescriptor, replyPacket);
             }

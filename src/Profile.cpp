@@ -39,6 +39,8 @@ void Profile::saveProfiles()
     stream << database.dump(2);
     stream.close();
 
+    profiles.clear();
+
     //printf("Profiles saved successfully\n");
 }
 
@@ -67,16 +69,16 @@ void Profile::loadProfiles()
     //printf("%i profiles loaded successfully\n", (int) profiles.size());
 }
 
-Profile Profile::get_user(std::string username)
+Profile* Profile::get_user(std::string username)
 {
     if ( user_exists(username) )
     {
         std::cout << "Getting user " << username << std::endl;
-        return profiles.at(username);
+        return &profiles.at(username);
     }
 
     create_user(username);
-    return profiles.at(username);
+    return &profiles.at(username);
 }
 
 std::string Profile::getUsername()
@@ -93,7 +95,6 @@ void Profile::create_user(std::string username)
     following = std::list<std::string>();
 
     profiles.insert(std::pair<std::string, Profile>(username, *this));
-    saveProfiles();
 }
 
 void Profile::follow_user(std::string username, std::string follow)
