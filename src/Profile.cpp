@@ -1,14 +1,17 @@
 #include "../include/Profile.h"
 
+std::mutex mutex;
+
 static std::string DB_PATH = "database/profiles.json";
 std::map<std::string, Profile> profiles;
 
 Profile::Profile()
-{}
+{
+}
 
 Profile::Profile(std::string username)
 {
-    if ( !user_exists(username) )
+    if (!user_exists(username))
     {
         create_user(username);
     }
@@ -23,9 +26,9 @@ void Profile::saveProfiles()
 {
     nlohmann::json database;
     //printf("Saving %i profiles...\n", (int) profiles.size());
-
+    mutex.lock();
     // itera sobre os perfis já salvos pelo server
-    for ( auto pair : profiles )
+    for (auto pair : profiles)
     {
         std::string username = pair.first;
         Profile profile = pair.second;
@@ -39,6 +42,7 @@ void Profile::saveProfiles()
     stream << database.dump(2);
     stream.close();
 
+    mutex.unlock();
     profiles.clear();
 
     //printf("Profiles saved successfully\n");
@@ -48,14 +52,14 @@ void Profile::loadProfiles()
 {
     nlohmann::json database;
     //printf("Loading profiles...\n");
-
+    mutex.lock();
     std::ifstream stream(DB_PATH);
 
     stream >> database;
     stream.close();
-
+    mutex.unlock();
     // preenche a lista
-    for ( const auto item : database.items() )
+    for (const auto item : database.items())
     {
         Profile pf = Profile();
         pf.setUsername(item.value()["username"].get<std::string>());
@@ -69,9 +73,9 @@ void Profile::loadProfiles()
     //printf("%i profiles loaded successfully\n", (int) profiles.size());
 }
 
-Profile* Profile::get_user(std::string username)
+Profile *Profile::get_user(std::string username)
 {
-    if ( user_exists(username) )
+    if (user_exists(username))
     {
         std::cout << "Getting user " << username << std::endl;
         return &profiles.at(username);
@@ -112,17 +116,17 @@ bool Profile::user_exists(std::string username)
     return profiles.find(username) != profiles.end();
 }
 
-void Profile::setUsername( std::string username )
+void Profile::setUsername(std::string username)
 {
     _username = username;
 }
 
-void Profile::setFollowers( std::list<std::string> newFollowers )
+void Profile::setFollowers(std::list<std::string> newFollowers)
 {
     followers = newFollowers;
 }
 
-void Profile::setFollowing( std::list<std::string> newFollowing )
+void Profile::setFollowing(std::list<std::string> newFollowing)
 {
     following = newFollowing;
 }

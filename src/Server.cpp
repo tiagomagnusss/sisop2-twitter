@@ -152,10 +152,11 @@ void *commandReceiverThread(void *args)
         if ( bytesWritten > 0 )
         {
             bytesRead = Communication::receivePacket(socketDescriptor, &packet);
+            pf = pfManager.get_user(packet.payload);
 
             if (packet.type == LOGIN)
             {
-                pf = pfManager.get_user(packet.payload);
+                
 
                 replyPacket = createPacket(REPLY_LOGIN, 0, time(0), "Login OK!");
                 std::cout << "Approved login of " << packet.payload << " on socket " << socketDescriptor << std::endl;

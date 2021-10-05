@@ -11,6 +11,7 @@
 #include <strings.h>
 #include <unistd.h>
 #include <regex>
+#include <mutex>
 #include "../nlohmann/json.hpp"
 
 class Profile
