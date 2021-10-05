@@ -1,7 +1,7 @@
 #include "../include/ClientUI.h"
 #include <unistd.h> //wait
 
-void* ui_thread(void *args);
+void *ui_thread(void *args);
 
 WINDOW *ClientUI::createWindow(int height, int width, int starty, int startx, bool border)
 {
@@ -59,7 +59,7 @@ void ClientUI::buildWindows()
 
         wprintw(legWnd, "Welcome, ");
         wprintw(legWnd, profile.c_str());
-        wprintw(legWnd, "! Available Commands: SEND <message> | FOLLOW <@profile> | CLEARFEED");
+        wprintw(legWnd, "! Commands: SEND <message> | FOLLOW <@profile> | CLEARFEED | EXIT");
         wrefresh(legWnd);
 
         clearCommand();
@@ -97,11 +97,21 @@ void ClientUI::setReturn(string text)
     wrefresh(rtnWnd);
 }
 
-void ClientUI::sendCommand(char command[148])
+void ClientUI::setReturn(string text, char payload[MAX_MESSAGE_SIZE])
+{
+    wmove(rtnWnd, 0, 0);
+    wclrtoeol(rtnWnd);
+    wprintw(rtnWnd, text.c_str());
+    wprintw(rtnWnd, payload);
+    wrefresh(rtnWnd);
+}
+
+string ClientUI::getCommand(char command[148])
 {
     std::string cmd, message;
 
     int i = 0;
+
     while (i < 9 && command[i] != ' ' && command[i] != '\t' && command[i] != '\0')
     {
         cmd.push_back(command[i]);
@@ -123,41 +133,53 @@ void ClientUI::sendCommand(char command[148])
     if (cmd == "SEND")
     {
         setReturn("Message sent sucessfully!");
+        return cmd + " " + message;
     }
     else if (cmd == "FOLLOW")
     {
         char regexProfile[20] = "@[a-zA-Z0-9_]{3,20}";
-        if (!std::regex_match(message, std::regex("@[a-zA-Z0-9_]{3,19}")))
+        if (!std::regex_match(message, std::regex(regexProfile)))
         {
             setReturn("Invalid profile name. It must begin with @ followed by 3-19 alphanumeric characters or underline (_).");
+            return "KEEPWAITING";
         }
         else
+        {
             setReturn((string) "Now following " += message);
+            return cmd + " " + message;
+        }
     }
     else if (cmd == "CLEARFEED")
     {
         clearNotifications();
         setReturn("Feed cleared.");
+        return "KEEPWAITING";
+    }
+    else if (cmd == "EXIT")
+    {
+        return "EXIT";
     }
     else
+    {
         setReturn("Invalid command.");
+        return "KEEPWAITING";
+    }
 }
 
-void ClientUI::waitCommand()
+string ClientUI::waitCommand()
 {
-    while (true)
+    string command = "KEEPWAITING";
+    while (command == "KEEPWAITING")
     {
         char str[148];
         wgetnstr(cmdWnd, str, 148);
-        sendCommand(str);
+        command = getCommand(str);
         clearCommand();
     }
+    return command;
 }
 void ClientUI::printNotifications()
 {
-
-    int oldX, oldY;
-    getyx(cmdWnd, oldY, oldX);
     wmove(notiWnd, 0, 0);
     int i = 0;
 
@@ -193,7 +215,7 @@ void ClientUI::closeUI()
 }
 
 // Instancia a UI
-ClientUI client;
+//ClientUI client;
 // int main()
 // {
 
@@ -210,12 +232,11 @@ ClientUI client;
 //     // Comeca a esperar por comandos
 //     client.waitCommand();
 
-
 //     client.closeUI();
 // }
 
 // trhead dummy para ficar enviando "notificacoes"
-void* ui_thread(void *args)
+/* void* ui_thread(void *args)
 {
     list<string> lista;
     string texto = "@alexandre_da_costa: Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint.";
@@ -233,4 +254,4 @@ void* ui_thread(void *args)
     }
 
     return NULL;
-}
+} */

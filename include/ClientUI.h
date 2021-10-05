@@ -26,17 +26,19 @@ private:
     string profile;
     void printNotifications();
     void clearCommand();
-    void sendCommand(char command[148]);
+    string getCommand(char command[148]);
     void clearNotifications();
-    void setReturn(string text);
+    
 
 public:
     ClientUI();
     void buildWindows();
     void setProfile(string profile);
-    void waitCommand();
+    string waitCommand();
     void addNotification(Notification newNotification);
     void closeUI();
+    void setReturn(string text);
+    void setReturn(string text, char payload[MAX_MESSAGE_SIZE]);
 };
 
 #endif

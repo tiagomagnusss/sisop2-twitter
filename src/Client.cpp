@@ -3,8 +3,8 @@
 
 bool interrupted = false;
 char _regexProfile[20] = "@[a-zA-Z0-9_]{3,19}";
-void* ntf_thread(void* args);
-void* cmd_thread(void* args);
+void *ntf_thread(void *args);
+void *cmd_thread(void *args);
 
 void sigint_handler(int signum)
 {
@@ -12,7 +12,8 @@ void sigint_handler(int signum)
 }
 
 Client::Client()
-{}
+{
+}
 
 Client::~Client()
 {
@@ -90,23 +91,22 @@ int Client::login()
         packet = createPacket(LOGIN, 0, time(0), _profile);
         int bytesWritten = Communication::sendPacket(_ntfSocketDescriptor, packet);
 
-        std::cout << "Logging in as " << packet.payload << " on notification socket " << _ntfSocketDescriptor << " ... ";
+        //std::cout << "Logging in as " << packet.payload << " on notification socket " << _ntfSocketDescriptor << " ... ";
 
         if (bytesWritten > 0)
         {
-            std::cout << "Login packet sent." << std::endl;
+            //std::cout << "Login packet sent." << std::endl;
         }
 
         bytesWritten = Communication::sendPacket(_cmdSocketDescriptor, createPacket(LOGIN, 1, time(0), _profile));
 
-        std::cout << "Logging in as " << packet.payload << " on command socket " << _cmdSocketDescriptor << " ... ";
+        //std::cout << "Logging in as " << packet.payload << " on command socket " << _cmdSocketDescriptor << " ... ";
 
         if (bytesWritten > 0)
         {
-            std::cout << "Login packet sent." << std::endl;
+            //std::cout << "Login packet sent." << std::endl;
             break;
         }
-
     }
 
     while (true)
@@ -115,17 +115,16 @@ int Client::login()
 
         if (bytesRead > 0)
         {
-            std::cout << "Server response for notification thread: " << packet.payload << std::endl;
+            //std::cout << "Server response for notification thread: " << packet.payload << std::endl;
         }
 
         bytesRead = Communication::receivePacket(_cmdSocketDescriptor, &packet);
 
         if (bytesRead > 0)
         {
-            std::cout << "Server response for command thread: " << packet.payload << std::endl;
+            //std::cout << "Server response for command thread: " << packet.payload << std::endl;
             break;
         }
-
     }
     return 0;
 }
@@ -138,18 +137,18 @@ int Client::logoff()
     {
         packet = createPacket(LOGOFF, 0, time(0), _profile);
 
-        std::cout << "Logging off notification thread of " << packet.payload << " ... ";
+        //std::cout << "Logging off notification thread of " << packet.payload << " ... ";
         int bytesWritten = Communication::sendPacket(_ntfSocketDescriptor, packet);
         if (bytesWritten > 0)
         {
-            std::cout << "OK!" << std::endl;
+            //std::cout << "OK!" << std::endl;
         }
 
-        std::cout << "Logging off command thread of " << packet.payload << " ... ";
+        //std::cout << "Logging off command thread of " << packet.payload << " ... ";
         bytesWritten = Communication::sendPacket(_cmdSocketDescriptor, packet);
         if (bytesWritten > 0)
         {
-            std::cout << "OK!" << std::endl;
+            //std::cout << "OK!" << std::endl;
             break;
         }
     }
@@ -160,6 +159,7 @@ int Client::logoff()
 std::pair<PacketType, std::string> splitMessage(std::string input);
 std::string read_input();
 Client cli;
+ClientUI userInterface;
 
 int main(int argc, char *argv[])
 {
@@ -174,7 +174,7 @@ int main(int argc, char *argv[])
     std::string serverAddress(argv[2]);
     std::string serverPort(argv[3]);
 
-    if ( !std::regex_match(profile, std::regex(_regexProfile)) )
+    if (!std::regex_match(profile, std::regex(_regexProfile)))
     {
         fprintf(stderr, "Invalid profile name. It must begin with @ followed by 3-19 alphanumeric characters or underline (_).\n");
         exit(INVALID_PROFILE);
@@ -186,57 +186,59 @@ int main(int argc, char *argv[])
         exit(INVALID_PORT);
     }
 
-    // ClientUI client;
-    // Envia o nome do usuario para exibir na tela
-    // client.setProfile(profile);
-    // Constroi as janelas ncurses
-    // client.buildWindows();
-    // thread que fica enviando notificacoes dummy
-    // pthread_t testThread;
-    // pthread_create(&testThread, NULL, ui_thread, NULL);
-    // Comeca a esperar por comandos
-    // client.waitCommand();
-    // client.closeUI();
-
     cli.init(profile, serverAddress, serverPort);
     signal(SIGINT, SIG_DFL);
 
     cli.login();
+
+    userInterface.setProfile(profile);
+    userInterface.buildWindows();
 
     pthread_t ntf_thd, cmd_thd;
     pthread_create(&ntf_thd, NULL, ntf_thread, NULL);
     pthread_create(&cmd_thd, NULL, cmd_thread, NULL);
 
     pthread_join(cmd_thd, NULL);
+
+    
     pthread_join(ntf_thd, NULL);
+
+    userInterface.closeUI();
 
     return 0;
 }
 
-void* ntf_thread(void* args)
+void *ntf_thread(void *args)
 {
     int socketId = cli.get_ntf_socket();
     Packet pkt;
 
-    while( !interrupted )
+    while (!interrupted)
     {
         //sleep(5);
         Communication::receivePacket(socketId, &pkt, true);
+        Notification notification;
 
         // server encerrando a conexão
-        if ( pkt.type == SERVER_HALT )
+        if (pkt.type == SERVER_HALT)
         {
             interrupted = true;
         }
-        else if ( pkt.type == NOTIFICATION )
+        else if (pkt.type == NOTIFICATION)
         {
-            if( pkt.sequenceNumber == 0 )
+            if (pkt.sequenceNumber == 0)
             {
-                std::cout << "<" << pkt.timestamp << "> "<< pkt.payload << ": ";
+
+                notification.senderUser = pkt.payload;
+                notification.timestamp = pkt.timestamp;
+                //std::cout << "<" << pkt.timestamp << "> "<< pkt.payload << ": ";
             }
             else
             {
-                std::cout << pkt.payload << std::endl;
+                notification.message = pkt.payload;
+                
+                userInterface.addNotification(notification);
+                //std::cout << pkt.payload << std::endl;
             }
         }
     }
@@ -244,16 +246,16 @@ void* ntf_thread(void* args)
     return NULL;
 }
 
-void* cmd_thread(void* args)
+void *cmd_thread(void *args)
 {
     int socketId = cli.get_cmd_socket();
     Packet pkt;
     int bytesWritten;
 
-    while(!interrupted)
+    while (!interrupted)
     {
         // lê input do user
-        std::string message = read_input();
+        std::string message = userInterface.waitCommand();
         std::pair<PacketType, std::string> result = splitMessage(message);
 
         if (interrupted || message == "EXIT" || message == "exit")
@@ -266,11 +268,13 @@ void* cmd_thread(void* args)
         }
 
         // ignora se estiver vazio ou for um codigo invalido para o client
-        if (message.empty() || result.first > 5) continue;
+        if (message.empty() || result.first > 5)
+            continue;
 
-        if ( result.first == ERROR )
+        if (result.first == ERROR)
         {
-            std::cout << result.second << std::endl;
+            userInterface.setReturn(result.second);
+            //std::cout << result.second << std::endl;
             continue;
         }
 
@@ -278,21 +282,24 @@ void* cmd_thread(void* args)
         bytesWritten = Communication::sendPacket(socketId, createPacket(result.first, 0, 1234, result.second));
         if (bytesWritten > 0)
         {
-            std::cout << "OK!" << std::endl;
+            userInterface.setReturn("Command sent! Waiting confirmation...");
+            //std::cout << "OK!" << std::endl;
         }
 
         // espera a resposta
-        std::cout << "Sending " << getPacketTypeName(result.first) << " command... ";
+        //std::cout << "Sending " << getPacketTypeName(result.first) << " command... ";
 
         Communication::receivePacket(socketId, &pkt);
 
-        if ( pkt.type == ERROR )
+        if (pkt.type == ERROR)
         {
-            std::cout << "Failed to send command: " << pkt.payload << std::endl;
+            userInterface.setReturn("Failed to send command: ", pkt.payload);
+            //std::cout << "Failed to send command: " << pkt.payload << std::endl;
         }
         else
         {
-            std::cout << pkt.payload << std::endl;
+            userInterface.setReturn("Success! ", pkt.payload);
+            //std::cout << pkt.payload << std::endl;
         }
     }
 
@@ -306,10 +313,10 @@ std::pair<PacketType, std::string> splitMessage(std::string input)
     std::string send = "SEND";
     std::string follow = "FOLLOW";
 
-    if ( strncmp( input.c_str(), send.c_str(), send.size() ) == 0 )
+    if (strncmp(input.c_str(), send.c_str(), send.size()) == 0)
     {
-        std::string message = input.substr( send.size() + 1 );
-        if ( message.size() > 128 )
+        std::string message = input.substr(send.size() + 1);
+        if (message.size() > 128)
         {
             result.first = ERROR;
             result.second = "Character count is greater than 128\n";
@@ -320,11 +327,11 @@ std::pair<PacketType, std::string> splitMessage(std::string input)
             result.second = message;
         }
     }
-    else if ( strncmp(input.c_str(), follow.c_str(), follow.size() ) ==0 )
+    else if (strncmp(input.c_str(), follow.c_str(), follow.size()) == 0)
     {
-        std::string profile = input.substr( follow.size() + 1 );
+        std::string profile = input.substr(follow.size() + 1);
 
-        if ( !std::regex_match(profile, std::regex(_regexProfile)) )
+        if (!std::regex_match(profile, std::regex(_regexProfile)))
         {
             result.first = ERROR;
             result.second = "Invalid profile name. It must begin with @ followed by 3-19 alphanumeric characters or underline (_).\n";
@@ -332,7 +339,7 @@ std::pair<PacketType, std::string> splitMessage(std::string input)
         else
         {
             result.first = FOLLOW;
-            result.second = input.substr( follow.size() + 1 );
+            result.second = input.substr(follow.size() + 1);
         }
     }
     else
@@ -346,7 +353,7 @@ std::pair<PacketType, std::string> splitMessage(std::string input)
 
 std::string read_input()
 {
-	std::string input;
-	std::getline (std::cin, input);
-	return input;
+    std::string input;
+    std::getline(std::cin, input);
+    return input;
 }
