@@ -103,16 +103,21 @@ int Client::login()
     connectToServer(_ntfSocketDescriptor, _serverAddress, _serverPort);
     bytesWritten = Communication::sendPacket(_ntfSocketDescriptor, createPacket(LOGIN, 0, time(0), _profile));
     if (bytesWritten < 0)
-        return -1;
+        return 1;
 
-    Communication::receivePacket(_cmdSocketDescriptor, &packet, true);
-    if ( packet.type == ERROR )
+    // ignora as solicitações de login repetidas
+    while( packet.type != ERROR && packet.type != REPLY_LOGIN )
     {
-        retValue = -1;
-    }
-    else
-    {
-        retValue++;
+        Communication::receivePacket(_ntfSocketDescriptor, &packet, true);
+        if ( packet.type == ERROR )
+        {
+            return 1;
+        }
+        else if ( packet.type == REPLY_LOGIN )
+        {
+            retValue++;
+            break;
+        }
     }
 
     sleep(1);
@@ -124,11 +129,7 @@ int Client::login()
         return -1;
 
     Communication::receivePacket(_cmdSocketDescriptor, &packet, true);
-    if ( packet.type == ERROR )
-    {
-        retValue = -1;
-    }
-    else
+    if ( packet.type == REPLY_LOGIN )
     {
         retValue++;
     }
@@ -191,9 +192,9 @@ int main(int argc, char *argv[])
     userInterface.setProfile(profile);
     if(userInterface.buildWindows()==false)
     {
-	cout << "Console window too small! Must be at least 100x30." << endl;
+	    cout << "Console window too small! Must be at least 100x30." << endl;
         signal(SIGINT, SIG_DFL);
-	raise(SIGINT);
+	    raise(SIGINT);
     }
 
     cli.init(profile, serverAddress, serverPort);
@@ -203,20 +204,22 @@ int main(int argc, char *argv[])
     if (loginResult < 0){
         fprintf(stderr, "An error has occured attempting to login.\n");
         signal(SIGINT, SIG_DFL);
-	raise(SIGINT);
+	    raise(SIGINT);
     }
     else if ( loginResult < 2 )
     {
         fprintf(stderr, "Two users are already connected to this account. Please wait and try again.\n");
         exit(LOGIN_ERROR);
     }
+    else
+    {
+        pthread_t ntf_thd, cmd_thd;
 
-    pthread_t ntf_thd, cmd_thd;
-
-    pthread_create(&cmd_thd, NULL, cmd_thread, NULL);
-    pthread_create(&ntf_thd, NULL, ntf_thread, NULL);
-    pthread_join(cmd_thd, NULL);
-    pthread_join(ntf_thd, NULL);
+        pthread_create(&cmd_thd, NULL, cmd_thread, NULL);
+        pthread_create(&ntf_thd, NULL, ntf_thread, NULL);
+        pthread_join(cmd_thd, NULL);
+        pthread_join(ntf_thd, NULL);
+    }
 
     return 0;
 }

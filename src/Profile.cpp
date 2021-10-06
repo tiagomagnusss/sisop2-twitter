@@ -1,6 +1,6 @@
 #include "../include/Profile.h"
 
-std::mutex mutex;
+std::mutex mutexFile, mutexMemory;
 
 static std::string DB_PATH = "database/profiles.json";
 std::map<std::string, Profile> profiles;
@@ -26,7 +26,7 @@ void Profile::saveProfiles()
 {
     nlohmann::json database;
     //printf("Saving %i profiles...\n", (int) profiles.size());
-    mutex.lock();
+    mutexFile.lock();
     // itera sobre os perfis já salvos pelo server
     for (auto pair : profiles)
     {
@@ -42,7 +42,7 @@ void Profile::saveProfiles()
     stream << database.dump(2);
     stream.close();
 
-    mutex.unlock();
+    mutexFile.unlock();
     profiles.clear();
 
     //printf("Profiles saved successfully\n");
@@ -52,12 +52,12 @@ void Profile::loadProfiles()
 {
     nlohmann::json database;
     //printf("Loading profiles...\n");
-    mutex.lock();
+    mutexFile.lock();
     std::ifstream stream(DB_PATH);
 
     stream >> database;
     stream.close();
-    mutex.unlock();
+    mutexFile.unlock();
     // preenche a lista
     for (const auto item : database.items())
     {
@@ -92,6 +92,7 @@ std::string Profile::getUsername()
 
 void Profile::create_user(std::string username)
 {
+    mutexMemory.lock();
     std::cout << "Creating user " << username << std::endl;
 
     _username = username;
@@ -99,16 +100,19 @@ void Profile::create_user(std::string username)
     following = std::list<std::string>();
 
     profiles.insert(std::pair<std::string, Profile>(username, *this));
+    mutexMemory.unlock();
 }
 
 void Profile::follow_user(std::string username, std::string follow)
 {
+    mutexMemory.lock();
     profiles.at(username).following.push_back(follow);
     profiles.at(follow).followers.push_back(username);
 
     // remove duplicatas
     profiles.at(username).following.unique();
     profiles.at(follow).followers.unique();
+    mutexMemory.unlock();
 }
 
 bool Profile::user_exists(std::string username)
@@ -123,10 +127,14 @@ void Profile::setUsername(std::string username)
 
 void Profile::setFollowers(std::list<std::string> newFollowers)
 {
+    mutexMemory.lock();
     followers = newFollowers;
+    mutexMemory.unlock();
 }
 
 void Profile::setFollowing(std::list<std::string> newFollowing)
 {
+    mutexMemory.lock();
     following = newFollowing;
+    mutexMemory.unlock();
 }

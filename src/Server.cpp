@@ -2,9 +2,9 @@
 #include "../include/Profile.h"
 
 std::list<Notification> pendingNotificationsList;
-std::map<std::string, int> onlineUsersMap;
-
+std::map<std::string, std::pair<int, int>> onlineUsersMap;
 static volatile bool interrupted = false;
+
 Profile pfManager = Profile();
 
 void sigint_handler(int signum)
@@ -94,9 +94,10 @@ void Server::startServing()
     {
         // TODO: aceitar conexão de notificação e de comandos ao mesmo tempo
         int connectionSocketDescriptor = acceptConnection();
-        std::cout << "New connection received!\n";
+        std::cout << "New connection received! ID: " << connectionSocketDescriptor << std::endl;
         pthread_t clientThread;
         pthread_create(&clientThread, NULL,
+        int threadId = pthread_create(&clientThread, NULL,
                        commandReceiverThread,
                        &connectionSocketDescriptor);
         threadList.push_back(clientThread);
@@ -139,6 +140,7 @@ void *commandReceiverThread(void *args)
 {
     int socketDescriptor = *((int *)args);
     int bytesRead, bytesWritten;
+    bool login_failed = false;
 
     Packet packet;
     Packet replyPacket;
@@ -156,17 +158,40 @@ void *commandReceiverThread(void *args)
 
             if (packet.type == LOGIN)
             {
-                
+                if (packet.sequenceNumber == 0)
+                {
+                    // se já tem o user online
+                    if ( onlineUsersMap.find(pf->getUsername()) != onlineUsersMap.end() )
+                    {
+                        std::pair<int, int>* userSockets = &onlineUsersMap.at(pf->getUsername());
+
+                        if ( userSockets->first <= 0 )
+                        {
+                            userSockets->first = socketDescriptor;
+                        }
+                        else if ( userSockets->second <= 0 )
+                        {
 
                 replyPacket = createPacket(REPLY_LOGIN, 0, time(0), "Login OK!");
                 std::cout << "Approved login of " << packet.payload << " on socket " << socketDescriptor << std::endl;
-
-                bytesWritten = Communication::sendPacket(socketDescriptor, replyPacket);
-
-                if (packet.sequenceNumber == 0)
-                {
+                            userSockets->second = socketDescriptor;
+                        }
+                        else
+                        {
                     onlineUsersMap.insert(std::pair<std::string, int>(pf->getUsername(), socketDescriptor));
                     std::cout << "User " << pf->getUsername() << " on socket " << onlineUsersMap.at(pf->getUsername()) << " is online and ready to receive notifications" << std::endl;
+                            Communication::sendPacket(socketDescriptor, createPacket(ERROR, 0, time(0), "Two clients are already logged in as this user. Please wait and try again later."));
+                            std::cout << "Two users are already connected. Ending socket with ID: " << socketDescriptor << std::endl;
+                            login_failed = true;
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        onlineUsersMap.insert(std::pair<std::string, std::pair<int, int>> (pf->getUsername(), std::pair<int, int>(socketDescriptor, 0)));
+                    }
+
+                    std::cout << "User " << pf->getUsername() << " on socket " << socketDescriptor << " is online and ready to receive notifications" << std::endl;
 
                     Notification notificationManager;
                     std::list<Notification> instanceForPendingNotificationsList = pendingNotificationsList;
@@ -182,7 +207,7 @@ void *commandReceiverThread(void *args)
                                 Communication::sendPacket(socketDescriptor, createPacket(NOTIFICATION, 0, time(0), currentNotification.senderUser));
                                 Communication::sendPacket(socketDescriptor, createPacket(NOTIFICATION, 1, time(0), currentNotification.message));
                                 std::cout << "Sending to user " << currentUser << " on socket " << socketDescriptor << " a pending notification..." << std::endl;
-                                notificationManager.pendingUsers.remove(currentUser);
+                                // notificationManager.pendingUsers.remove(currentUser);
                             }
                         }
 
@@ -193,12 +218,16 @@ void *commandReceiverThread(void *args)
                     }
                 }
 
+                replyPacket = createPacket(REPLY_LOGIN, 0, time(0), "Login OK!");
+                std::cout << "Approved login of " << packet.payload << " on socket " << socketDescriptor << std::endl;
+
+                bytesWritten = Communication::sendPacket(socketDescriptor, replyPacket);
                 break;
             }
         }
     }
 
-    while (!interrupted)
+    while (!interrupted && !login_failed)
     {
         bytesWritten = 0;
         bytesRead = 0;
@@ -222,7 +251,14 @@ void *commandReceiverThread(void *args)
                 // encerra a thread
                 std::cout << "Profile " << packet.payload << " logged off (socket " << socketDescriptor << ")" << std::endl;
 
-                onlineUsersMap.erase(pf->getUsername());
+                if ( onlineUsersMap.at(pf->getUsername()).first == socketDescriptor )
+                {
+                    onlineUsersMap.at(pf->getUsername()).first = 0;
+                }
+                else if ( onlineUsersMap.at(pf->getUsername()).second == socketDescriptor )
+                {
+                    onlineUsersMap.at(pf->getUsername()).second = 0;
+                }
                 break;
             }
 
@@ -241,9 +277,21 @@ void *commandReceiverThread(void *args)
                     std::cout << "this is user " << userToReceiveNotification << std::endl;
                     if (onlineUsersMap.find(userToReceiveNotification) != onlineUsersMap.end())
                     {
-                        Communication::sendPacket(onlineUsersMap.at(userToReceiveNotification), createPacket(NOTIFICATION, 0, time(0), pf->getUsername()));
-                        Communication::sendPacket(onlineUsersMap.at(userToReceiveNotification), createPacket(NOTIFICATION, 1, time(0), packet.payload));
-                        std::cout << "Sending to user " << userToReceiveNotification << " on socket " << onlineUsersMap.at(userToReceiveNotification) << " a notification..." << std::endl;
+                        std::pair<int, int> userSessions = onlineUsersMap.at(userToReceiveNotification);
+                        if ( userSessions.first > 0 )
+                        {
+                            Communication::sendPacket(userSessions.first, createPacket(NOTIFICATION, 0, time(0), pf->getUsername()));
+                            Communication::sendPacket(userSessions.first, createPacket(NOTIFICATION, 1, time(0), packet.payload));
+                            std::cout << "Sending to user " << userToReceiveNotification << " on socket " << userSessions.first << " a notification..." << std::endl;
+                        }
+
+                        if ( userSessions.second > 0 )
+                        {
+                            Communication::sendPacket(userSessions.second, createPacket(NOTIFICATION, 0, time(0), pf->getUsername()));
+                            Communication::sendPacket(userSessions.second, createPacket(NOTIFICATION, 1, time(0), packet.payload));
+                            std::cout << "Sending to user " << userToReceiveNotification << " on socket " << userSessions.second << " a notification..." << std::endl;
+                        }
+
                     }
                     else
                     {
