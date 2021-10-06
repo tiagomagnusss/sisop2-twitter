@@ -156,11 +156,6 @@ void *commandReceiverThread(void *args)
 
             if (packet.type == LOGIN)
             {
-                replyPacket = createPacket(REPLY_LOGIN, 0, time(0), "Login OK!");
-                std::cout << "Approved login of " << packet.payload << " on socket " << socketDescriptor << std::endl;
-
-                bytesWritten = Communication::sendPacket(socketDescriptor, replyPacket);
-
                 if (packet.sequenceNumber == 0)
                 {
                     // se já tem o user online
@@ -191,6 +186,10 @@ void *commandReceiverThread(void *args)
 
                     std::cout << "User " << pf->getUsername() << " on socket " << socketDescriptor << " is online and ready to receive notifications" << std::endl;
 
+                    replyPacket = createPacket(REPLY_LOGIN, 0, time(0), "Login OK!");
+                    std::cout << "Approved login of " << packet.payload << " on socket " << socketDescriptor << std::endl;
+                    bytesWritten = Communication::sendPacket(socketDescriptor, replyPacket);
+
                     Notification notificationManager;
                     std::list<Notification> instanceForPendingNotificationsList = pendingNotificationsList;
 
@@ -215,6 +214,13 @@ void *commandReceiverThread(void *args)
                         }
                     }
                 }
+                else
+                {
+                    replyPacket = createPacket(REPLY_LOGIN, 0, time(0), "Login OK!");
+                    std::cout << "Approved login of " << packet.payload << " on socket " << socketDescriptor << std::endl;
+                    bytesWritten = Communication::sendPacket(socketDescriptor, replyPacket);
+                }
+
                 break;
             }
         }
