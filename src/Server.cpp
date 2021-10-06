@@ -156,6 +156,11 @@ void *commandReceiverThread(void *args)
 
             if (packet.type == LOGIN)
             {
+                replyPacket = createPacket(REPLY_LOGIN, 0, time(0), "Login OK!");
+                std::cout << "Approved login of " << packet.payload << " on socket " << socketDescriptor << std::endl;
+
+                bytesWritten = Communication::sendPacket(socketDescriptor, replyPacket);
+
                 if (packet.sequenceNumber == 0)
                 {
                     // se já tem o user online
@@ -210,11 +215,6 @@ void *commandReceiverThread(void *args)
                         }
                     }
                 }
-
-                replyPacket = createPacket(REPLY_LOGIN, 0, time(0), "Login OK!");
-                std::cout << "Approved login of " << packet.payload << " on socket " << socketDescriptor << std::endl;
-
-                bytesWritten = Communication::sendPacket(socketDescriptor, replyPacket);
                 break;
             }
         }
@@ -244,14 +244,23 @@ void *commandReceiverThread(void *args)
                 // encerra a thread
                 std::cout << "Profile " << packet.payload << " logged off (socket " << socketDescriptor << ")" << std::endl;
 
-                if ( onlineUsersMap.at(pf->getUsername()).first == socketDescriptor )
+                if ( onlineUsersMap.find(pf->getUsername()) != onlineUsersMap.end() )
                 {
-                    onlineUsersMap.at(pf->getUsername()).first = 0;
+                    if ( onlineUsersMap.at(pf->getUsername()).first == socketDescriptor )
+                    {
+                        onlineUsersMap.at(pf->getUsername()).first = 0;
+                    }
+                    else if ( onlineUsersMap.at(pf->getUsername()).second == socketDescriptor )
+                    {
+                        onlineUsersMap.at(pf->getUsername()).second = 0;
+                    }
+
+                    if (  onlineUsersMap.at(pf->getUsername()).first == 0 && onlineUsersMap.at(pf->getUsername()).second == 0 )
+                    {
+                        onlineUsersMap.erase(pf->getUsername());
+                    }
                 }
-                else if ( onlineUsersMap.at(pf->getUsername()).second == socketDescriptor )
-                {
-                    onlineUsersMap.at(pf->getUsername()).second = 0;
-                }
+
                 break;
             }
 
@@ -284,7 +293,6 @@ void *commandReceiverThread(void *args)
                             Communication::sendPacket(userSessions.second, createPacket(NOTIFICATION, 1, time(0), packet.payload));
                             std::cout << "Sending to user " << userToReceiveNotification << " on socket " << userSessions.second << " a notification..." << std::endl;
                         }
-
                     }
                     else
                     {

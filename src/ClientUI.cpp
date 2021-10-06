@@ -66,8 +66,8 @@ bool ClientUI::buildWindows()
 
         wprintw(rtnWnd, "Login successuful.");
         wrefresh(rtnWnd);
-	
-	return true;
+
+	    return true;
     }
     else
     {
@@ -139,7 +139,7 @@ string ClientUI::getCommand(char command[148])
     {
         setReturn("Message sent sucessfully!");
 
-	addNotification( setNotification( profile, message ));
+	    addNotification( setNotification( profile, message ));
 
         return cmd + " " + message;
     }
