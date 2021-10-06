@@ -138,6 +138,9 @@ string ClientUI::getCommand(char command[148])
     if (cmd == "SEND")
     {
         setReturn("Message sent sucessfully!");
+
+	addNotification( setNotification( profile, message ));
+
         return cmd + " " + message;
     }
     else if (cmd == "FOLLOW")
