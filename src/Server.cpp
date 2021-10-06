@@ -92,7 +92,6 @@ void Server::startServing()
     std::list<pthread_t> threadList = std::list<pthread_t>();
     while (!interrupted)
     {
-        // TODO: aceitar conexão de notificação e de comandos ao mesmo tempo
         int connectionSocketDescriptor = acceptConnection();
         std::cout << "New connection received! ID: " << connectionSocketDescriptor << std::endl;
         pthread_t clientThread;
@@ -170,15 +169,10 @@ void *commandReceiverThread(void *args)
                         }
                         else if ( userSockets->second <= 0 )
                         {
-
-                replyPacket = createPacket(REPLY_LOGIN, 0, time(0), "Login OK!");
-                std::cout << "Approved login of " << packet.payload << " on socket " << socketDescriptor << std::endl;
                             userSockets->second = socketDescriptor;
                         }
                         else
                         {
-                    onlineUsersMap.insert(std::pair<std::string, int>(pf->getUsername(), socketDescriptor));
-                    std::cout << "User " << pf->getUsername() << " on socket " << onlineUsersMap.at(pf->getUsername()) << " is online and ready to receive notifications" << std::endl;
                             Communication::sendPacket(socketDescriptor, createPacket(ERROR, 0, time(0), "Two clients are already logged in as this user. Please wait and try again later."));
                             std::cout << "Two users are already connected. Ending socket with ID: " << socketDescriptor << std::endl;
                             login_failed = true;
