@@ -96,7 +96,6 @@ void Server::startServing()
         int connectionSocketDescriptor = acceptConnection();
         std::cout << "New connection received! ID: " << connectionSocketDescriptor << std::endl;
         pthread_t clientThread;
-        pthread_create(&clientThread, NULL,
         int threadId = pthread_create(&clientThread, NULL,
                        commandReceiverThread,
                        &connectionSocketDescriptor);
