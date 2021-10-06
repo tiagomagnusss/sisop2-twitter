@@ -147,7 +147,7 @@ void *commandReceiverThread(void *args)
 
     while(true)
     {
-        bytesWritten = Communication::sendPacket(socketDescriptor, createPacket(LOGIN, 0, 0, std::string("Requesting login")));
+        bytesWritten = Communication::sendPacket(socketDescriptor, createPacket(REQUIRE_LOGIN, 0, 0, std::string("Requiring client login")));
 
         if ( bytesWritten > 0 )
         {

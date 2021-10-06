@@ -17,6 +17,7 @@ typedef enum
     ERROR,
 
     // Server
+    REQUIRE_LOGIN,
     REPLY_LOGIN,
     REPLY_FOLLOW,
     REPLY_SEND,
