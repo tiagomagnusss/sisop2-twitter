@@ -17,7 +17,6 @@ typedef enum
     ERROR,
 
     // Server
-    REQUIRE_LOGIN,
     REPLY_LOGIN,
     REPLY_FOLLOW,
     REPLY_SEND,
@@ -34,7 +33,7 @@ typedef struct _packet
     char payload[MAX_MESSAGE_SIZE];
 } Packet;
 
-Packet createPacket(PacketType type, uint16_t sequenceNumber, uint16_t timestamp, std::string payload);
+Packet createPacket(PacketType type, uint16_t sequenceNumber, time_t timestamp, std::string payload);
 std::string getPacketTypeName(int type);
 
 #endif

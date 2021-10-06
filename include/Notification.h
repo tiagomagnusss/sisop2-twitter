@@ -17,6 +17,6 @@ typedef struct _notification
     std::list<std::string> pendingUsers;	//Destinatários pendentes
 } Notification;
 
-Notification setNotification(std::string senderUser, std::string message);
+Notification setNotification(std::string senderUser, time_t timestamp, std::string message);
 
 #endif

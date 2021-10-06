@@ -1,6 +1,6 @@
 #include "../include/Packet.h"
 
-Packet createPacket(PacketType type, uint16_t sequenceNumber, uint16_t timestamp, std::string payload)
+Packet createPacket(PacketType type, uint16_t sequenceNumber, time_t timestamp, std::string payload)
 {
     Packet packet;
     packet.type = type;

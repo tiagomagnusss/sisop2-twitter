@@ -101,7 +101,7 @@ int Client::login()
 
     Communication::receivePacket(_ntfSocketDescriptor, &packet, true);
     connectToServer(_ntfSocketDescriptor, _serverAddress, _serverPort);
-    bytesWritten = Communication::sendPacket(_ntfSocketDescriptor, createPacket(LOGIN, 0, time(0), _profile));
+    bytesWritten = Communication::sendPacket(_ntfSocketDescriptor, createPacket(LOGIN, 0, time(nullptr), _profile));
     if (bytesWritten < 0)
         return 1;
 
@@ -124,7 +124,7 @@ int Client::login()
     bytesWritten = 0;
     connectToServer(_cmdSocketDescriptor, _serverAddress, _serverPort);
     Communication::receivePacket(_cmdSocketDescriptor, &packet, true);
-    bytesWritten = Communication::sendPacket(_cmdSocketDescriptor, createPacket(LOGIN, 1, time(0), _profile));
+    bytesWritten = Communication::sendPacket(_cmdSocketDescriptor, createPacket(LOGIN, 1, time(nullptr), _profile));
     if (bytesWritten < 0)
         return -1;
 
@@ -143,7 +143,7 @@ int Client::logoff()
 
     while (true)
     {
-        packet = createPacket(LOGOFF, 0, time(0), _profile);
+        packet = createPacket(LOGOFF, 0, time(nullptr), _profile);
 
         //std::cout << "Logging off notification thread of " << packet.payload << " ... ";
         int bytesWritten = Communication::sendPacket(_ntfSocketDescriptor, packet);
@@ -189,14 +189,6 @@ int main(int argc, char *argv[])
         exit(INVALID_PORT);
     }
 
-    userInterface.setProfile(profile);
-    if(userInterface.buildWindows()==false)
-    {
-	    cout << "Console window too small! Must be at least 100x30." << endl;
-        signal(SIGINT, SIG_DFL);
-	    raise(SIGINT);
-    }
-
     cli.init(profile, serverAddress, serverPort);
     signal(SIGINT, sigint_handler);
 
@@ -209,10 +201,21 @@ int main(int argc, char *argv[])
     else if ( loginResult < 2 )
     {
         fprintf(stderr, "Two users are already connected to this account. Please wait and try again.\n");
-        exit(LOGIN_ERROR);
+        signal(SIGINT, SIG_DFL);
+	    raise(SIGINT);
     }
     else
     {
+
+	userInterface.setProfile(profile);
+	if(userInterface.buildWindows()==false)
+	{
+	    cout << "Console window too small! Must be at least 100x30." << endl;
+	    cli.logoff();
+	    signal(SIGINT, SIG_DFL);
+		raise(SIGINT);
+	}
+
         pthread_t ntf_thd, cmd_thd;
 
         pthread_create(&cmd_thd, NULL, cmd_thread, NULL);

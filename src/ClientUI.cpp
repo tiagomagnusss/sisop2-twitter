@@ -139,8 +139,6 @@ string ClientUI::getCommand(char command[148])
     {
         setReturn("Message sent sucessfully!");
 
-	    addNotification( setNotification( profile, message ));
-
         return cmd + " " + message;
     }
     else if (cmd == "FOLLOW")
@@ -195,7 +193,8 @@ void ClientUI::printNotifications()
     {
         if (i < maxNotifications)
         {
-            std::tm *ptm = std::localtime(&notification.timestamp);
+	    time_t timestamp = notification.timestamp;
+            std::tm *ptm = localtime(&timestamp);
             char dateTime[20];
             std::strftime(dateTime, 20, "%d/%m/%y %H:%M", ptm);
             wclrtoeol(notiWnd);

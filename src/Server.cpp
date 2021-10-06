@@ -147,7 +147,7 @@ void *commandReceiverThread(void *args)
 
     while(true)
     {
-        bytesWritten = Communication::sendPacket(socketDescriptor, createPacket(REQUIRE_LOGIN, 0, 0, std::string("Requiring client login")));
+        bytesWritten = Communication::sendPacket(socketDescriptor, createPacket(LOGIN, 0, 0, std::string("Requesting login")));
 
         if ( bytesWritten > 0 )
         {
@@ -173,7 +173,7 @@ void *commandReceiverThread(void *args)
                         }
                         else
                         {
-                            Communication::sendPacket(socketDescriptor, createPacket(ERROR, 0, time(0), "Two clients are already logged in as this user. Please wait and try again later."));
+                            Communication::sendPacket(socketDescriptor, createPacket(ERROR, 0, time(nullptr), "Two clients are already logged in as this user. Please wait and try again later."));
                             std::cout << "Two users are already connected. Ending socket with ID: " << socketDescriptor << std::endl;
                             login_failed = true;
                             break;
@@ -186,7 +186,7 @@ void *commandReceiverThread(void *args)
 
                     std::cout << "User " << pf->getUsername() << " on socket " << socketDescriptor << " is online and ready to receive notifications" << std::endl;
 
-                    replyPacket = createPacket(REPLY_LOGIN, 0, time(0), "Login OK!");
+		    replyPacket = createPacket(REPLY_LOGIN, 0, time(0), "Login OK!");
                     std::cout << "Approved login of " << packet.payload << " on socket " << socketDescriptor << std::endl;
                     bytesWritten = Communication::sendPacket(socketDescriptor, replyPacket);
 
@@ -201,10 +201,10 @@ void *commandReceiverThread(void *args)
                         {
                             if (currentUser == pf->getUsername())
                             {
-                                Communication::sendPacket(socketDescriptor, createPacket(NOTIFICATION, 0, time(0), currentNotification.senderUser));
-                                Communication::sendPacket(socketDescriptor, createPacket(NOTIFICATION, 1, time(0), currentNotification.message));
+                                Communication::sendPacket(socketDescriptor, createPacket(NOTIFICATION, 0, currentNotification.timestamp, currentNotification.senderUser));
+                                Communication::sendPacket(socketDescriptor, createPacket(NOTIFICATION, 1, currentNotification.timestamp, currentNotification.message));
                                 std::cout << "Sending to user " << currentUser << " on socket " << socketDescriptor << " a pending notification..." << std::endl;
-                                // notificationManager.pendingUsers.remove(currentUser);
+                                notificationManager.pendingUsers.remove(currentUser);
                             }
                         }
 
@@ -220,7 +220,6 @@ void *commandReceiverThread(void *args)
                     std::cout << "Approved login of " << packet.payload << " on socket " << socketDescriptor << std::endl;
                     bytesWritten = Communication::sendPacket(socketDescriptor, replyPacket);
                 }
-
                 break;
             }
         }
@@ -274,13 +273,15 @@ void *commandReceiverThread(void *args)
             {
                 std::cout << "Profile " << pf->getUsername() << " sent: " << packet.payload << std::endl;
 
-                replyPacket = createPacket(REPLY_SEND, 0, time(0), "Command SEND received!");
+                replyPacket = createPacket(REPLY_SEND, 0, time(nullptr), "Command SEND received!");
                 std::cout << "Replying to SEND command... \n";
                 bytesWritten = Communication::sendPacket(socketDescriptor, replyPacket);
 
-                ntf = setNotification(pf->getUsername(), packet.payload); //cria a notificação
+                ntf = setNotification(pf->getUsername(), time(nullptr), packet.payload); //cria a notificação
+		std::list<std::string> usersToNotify = pf->followers;
+		usersToNotify.push_front(pf->getUsername());
 
-                for (auto userToReceiveNotification : pf->followers)
+                for (auto userToReceiveNotification : usersToNotify)
                 {
                     std::cout << "this is user " << userToReceiveNotification << std::endl;
                     if (onlineUsersMap.find(userToReceiveNotification) != onlineUsersMap.end())
@@ -288,15 +289,15 @@ void *commandReceiverThread(void *args)
                         std::pair<int, int> userSessions = onlineUsersMap.at(userToReceiveNotification);
                         if ( userSessions.first > 0 )
                         {
-                            Communication::sendPacket(userSessions.first, createPacket(NOTIFICATION, 0, time(0), pf->getUsername()));
-                            Communication::sendPacket(userSessions.first, createPacket(NOTIFICATION, 1, time(0), packet.payload));
+                            Communication::sendPacket(userSessions.first, createPacket(NOTIFICATION, 0, time(nullptr), pf->getUsername()));
+                            Communication::sendPacket(userSessions.first, createPacket(NOTIFICATION, 1, time(nullptr), packet.payload));
                             std::cout << "Sending to user " << userToReceiveNotification << " on socket " << userSessions.first << " a notification..." << std::endl;
                         }
 
                         if ( userSessions.second > 0 )
                         {
-                            Communication::sendPacket(userSessions.second, createPacket(NOTIFICATION, 0, time(0), pf->getUsername()));
-                            Communication::sendPacket(userSessions.second, createPacket(NOTIFICATION, 1, time(0), packet.payload));
+                            Communication::sendPacket(userSessions.second, createPacket(NOTIFICATION, 0, time(nullptr), pf->getUsername()));
+                            Communication::sendPacket(userSessions.second, createPacket(NOTIFICATION, 1, time(nullptr), packet.payload));
                             std::cout << "Sending to user " << userToReceiveNotification << " on socket " << userSessions.second << " a notification..." << std::endl;
                         }
                     }
@@ -318,17 +319,17 @@ void *commandReceiverThread(void *args)
                 if (pf->getUsername() == packet.payload)
                 {
                     std::string msgError("Users can't follow themselves\n");
-                    replyPacket = createPacket(ERROR, 0, time(0), msgError);
+                    replyPacket = createPacket(ERROR, 0, time(nullptr), msgError);
                 }
                 else if (!pfManager.user_exists(packet.payload))
                 {
                     std::string msgError("User does not exist\n");
-                    replyPacket = createPacket(ERROR, 0, time(0), msgError);
+                    replyPacket = createPacket(ERROR, 0, time(nullptr), msgError);
                 }
                 else
                 {
                     std::cout << "User " << pf->getUsername() << " is now following " << packet.payload << std::endl;
-                    replyPacket = createPacket(REPLY_FOLLOW, 0, time(0), "OK!\n");
+                    replyPacket = createPacket(REPLY_FOLLOW, 0, time(nullptr), "OK!\n");
                     pfManager.follow_user(pf->getUsername(), packet.payload);
                 }
 
