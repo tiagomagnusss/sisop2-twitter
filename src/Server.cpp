@@ -283,7 +283,7 @@ void *commandReceiverThread(void *args)
 
                 for (auto userToReceiveNotification : usersToNotify)
                 {
-                    std::cout << "this is user " << userToReceiveNotification << std::endl;
+                    std::cout << "Notification will be sent to user " << userToReceiveNotification << std::endl;
                     if (onlineUsersMap.find(userToReceiveNotification) != onlineUsersMap.end())
                     {
                         std::pair<int, int> userSessions = onlineUsersMap.at(userToReceiveNotification);
@@ -329,7 +329,8 @@ void *commandReceiverThread(void *args)
                 else
                 {
                     std::cout << "User " << pf->getUsername() << " is now following " << packet.payload << std::endl;
-                    replyPacket = createPacket(REPLY_FOLLOW, 0, time(nullptr), "OK!\n");
+                    std::string msg = std::string("You're now following ").append(std::string(packet.payload)).append("!\n");
+                    replyPacket = createPacket(REPLY_FOLLOW, 0, time(nullptr), msg);
                     pfManager.follow_user(pf->getUsername(), packet.payload);
                 }
 
