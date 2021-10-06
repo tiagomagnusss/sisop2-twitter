@@ -147,7 +147,7 @@ void *commandReceiverThread(void *args)
 
     while(true)
     {
-        bytesWritten = Communication::sendPacket(socketDescriptor, createPacket(LOGIN, 0, 0, std::string("Requesting login")));
+        bytesWritten = Communication::sendPacket(socketDescriptor, createPacket(REQUIRE_LOGIN, 0, 0, std::string("Requiring client login")));
 
         if ( bytesWritten > 0 )
         {
@@ -186,7 +186,7 @@ void *commandReceiverThread(void *args)
 
                     std::cout << "User " << pf->getUsername() << " on socket " << socketDescriptor << " is online and ready to receive notifications" << std::endl;
 
-		    replyPacket = createPacket(REPLY_LOGIN, 0, time(0), "Login OK!");
+		            replyPacket = createPacket(REPLY_LOGIN, 0, time(0), "Login OK!");
                     std::cout << "Approved login of " << packet.payload << " on socket " << socketDescriptor << std::endl;
                     bytesWritten = Communication::sendPacket(socketDescriptor, replyPacket);
 
@@ -278,8 +278,8 @@ void *commandReceiverThread(void *args)
                 bytesWritten = Communication::sendPacket(socketDescriptor, replyPacket);
 
                 ntf = setNotification(pf->getUsername(), time(nullptr), packet.payload); //cria a notificação
-		std::list<std::string> usersToNotify = pf->followers;
-		usersToNotify.push_front(pf->getUsername());
+                std::list<std::string> usersToNotify = pf->followers;
+                usersToNotify.push_front(pf->getUsername());
 
                 for (auto userToReceiveNotification : usersToNotify)
                 {

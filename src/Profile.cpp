@@ -106,12 +106,21 @@ void Profile::create_user(std::string username)
 void Profile::follow_user(std::string username, std::string follow)
 {
     mutexMemory.lock();
-    profiles.at(username).following.push_back(follow);
-    profiles.at(follow).followers.push_back(username);
+    bool repeated = false;
+    for ( std::string userFollowing : profiles.at(username).following )
+    {
+        if ( follow == userFollowing )
+        {
+            repeated = true;
+            break;
+        }
+    }
 
-    // remove duplicatas
-    profiles.at(username).following.unique();
-    profiles.at(follow).followers.unique();
+    if ( !repeated )
+    {
+        profiles.at(username).following.push_back(follow);
+        profiles.at(follow).followers.push_back(username);
+    }
     mutexMemory.unlock();
 }
 

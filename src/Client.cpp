@@ -206,15 +206,14 @@ int main(int argc, char *argv[])
     }
     else
     {
-
-	userInterface.setProfile(profile);
-	if(userInterface.buildWindows()==false)
-	{
-	    cout << "Console window too small! Must be at least 100x30." << endl;
-	    cli.logoff();
-	    signal(SIGINT, SIG_DFL);
-		raise(SIGINT);
-	}
+        userInterface.setProfile(profile);
+        if(userInterface.buildWindows()==false)
+        {
+            cout << "Console window too small! Must be at least 100x30." << endl;
+            cli.logoff();
+            signal(SIGINT, SIG_DFL);
+            raise(SIGINT);
+        }
 
         pthread_t ntf_thd, cmd_thd;
 
