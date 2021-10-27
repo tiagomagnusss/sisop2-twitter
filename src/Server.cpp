@@ -4,6 +4,7 @@
 std::list<Notification> pendingNotificationsList;
 std::map<std::string, std::pair<int, int>> onlineUsersMap;
 static volatile bool interrupted = false;
+ReplicaManager rm;
 
 Profile pfManager = Profile();
 
@@ -116,14 +117,15 @@ int main(int argc, char *argv[])
 
     std::signal(SIGINT, sigint_handler);
 
-    // Tratar erro
     int port = atoi(argv[1]);
     int maxConnections = atoi(argv[2]);
 
     Server server(port, maxConnections);
+    // inicializa o replica manager com a porta fornecida
     // TODO: habilitar quando parar de debugar
     // como a leitura é bloqueante na thread, o processo só itera quando receber algo
     //signal(SIGINT, sigint_handler);
+    rm = ReplicaManager(port);
 
     pfManager.loadProfiles();
     server.startServing();
@@ -152,7 +154,18 @@ void *commandReceiverThread(void *args)
         if ( bytesWritten > 0 )
         {
             bytesRead = Communication::receivePacket(socketDescriptor, &packet);
-            pf = pfManager.get_user(packet.payload);
+
+            if ( packet.sequenceNumber == 69 )
+            {
+                replyPacket = createPacket(COORDINATOR, 69, time(0), "");
+                std::cout << "Replying that I am coordinator to socket " << socketDescriptor << std::endl;
+                bytesWritten = Communication::sendPacket(socketDescriptor, replyPacket);
+                break;
+            }
+            else
+            {
+                pf = pfManager.get_user(packet.payload);
+            }
 
             if (packet.type == LOGIN)
             {
@@ -246,6 +259,9 @@ void *commandReceiverThread(void *args)
 
             if (packet.type == LOGOFF)
             {
+                if ( packet.sequenceNumber == 69 )
+                    break;
+
                 // encerra a thread
                 std::cout << "Profile " << packet.payload << " logged off (socket " << socketDescriptor << ")" << std::endl;
 
@@ -334,6 +350,12 @@ void *commandReceiverThread(void *args)
                     pfManager.follow_user(pf->getUsername(), packet.payload);
                 }
 
+                bytesWritten = Communication::sendPacket(socketDescriptor, replyPacket);
+            }
+
+            if ( packet.type == STATUS )
+            {
+                replyPacket = createPacket(COORDINATOR, 69, time(nullptr), "");
                 bytesWritten = Communication::sendPacket(socketDescriptor, replyPacket);
             }
 

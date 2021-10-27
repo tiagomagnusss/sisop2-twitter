@@ -6,8 +6,7 @@ static std::string DB_PATH = "database/profiles.json";
 std::map<std::string, Profile> profiles;
 
 Profile::Profile()
-{
-}
+{}
 
 Profile::Profile(std::string username)
 {

@@ -6,6 +6,7 @@
 #define FAILURE_LISTEN 3
 #define FAILURE_ACCEPT 4
 
+#include "ReplicaManager.h"
 #include "Packet.h"
 #include "Communication.h"
 #include "Profile.h"
@@ -27,18 +28,18 @@ void *commandReceiverThread(void *args);
 
 class Server
 {
-private:
-    int _socketDescriptor;
+    private:
+        int _socketDescriptor;
 
-    int createSocket();
-    int bindSocket(int port);
-    int startListening(int maxConnections);
-    int acceptConnection();
+        int createSocket();
+        int bindSocket(int port);
+        int startListening(int maxConnections);
+        int acceptConnection();
 
-public:
-    Server(int port, int maxConnections);
-    ~Server();
-    void startServing();
+    public:
+        Server(int port, int maxConnections);
+        ~Server();
+        void startServing();
 };
 
 #endif

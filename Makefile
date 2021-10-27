@@ -21,6 +21,7 @@ app_client: $(CLIENT_DEPS)
 	$(CC) $(DEBUGF) -o $(BIN_DIR)/$@ $^ $(CFLAGS)
 
 SERVER_DEPS += $(OBJ_DIR)/Server.o
+SERVER_DEPS += $(OBJ_DIR)/ReplicaManager.o
 SERVER_DEPS += $(OBJ_DIR)/Packet.o
 SERVER_DEPS += $(OBJ_DIR)/Communication.o
 SERVER_DEPS += $(OBJ_DIR)/Profile.o

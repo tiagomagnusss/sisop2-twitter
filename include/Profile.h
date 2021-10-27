@@ -37,6 +37,7 @@ class Profile
 
         std::list<std::string> followers;
         std::list<std::string> following;
+
     private:
         std::string _username;
 };

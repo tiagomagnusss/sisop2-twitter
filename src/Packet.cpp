@@ -42,6 +42,24 @@ std::string getPacketTypeName(int type)
     case SERVER_HALT:
         return "SERVER_HALT";
         break;
+    case NOTIFICATION:
+        return "NOTIFICATION";
+        break;
+    case STATUS:
+        return "STATUS";
+        break;
+    case REQUIRE_LOGIN:
+        return "REQUIRE_LOGIN";
+        break;
+    case COORDINATOR:
+        return "COORDINATOR";
+        break;
+    case NOT_COORDINATOR:
+        return "NOT_COORDINATOR";
+        break;
+    case ELECTION:
+        return "ELECTION";
+        break;
     default:
         return "INVALID_TYPE";
     }

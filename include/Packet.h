@@ -22,7 +22,14 @@ typedef enum
     REPLY_FOLLOW,
     REPLY_SEND,
     SERVER_HALT,
-    NOTIFICATION
+    NOTIFICATION,
+    STATUS,
+
+    // Eleição
+    COORDINATOR,
+    NOT_COORDINATOR,
+    ELECTION,
+    REPLY_ELECTION
 } PacketType;
 
 typedef struct _packet
