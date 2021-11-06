@@ -28,10 +28,11 @@
 #include <mutex>
 #include "../nlohmann/json.hpp"
 
-int discoverServer(std::pair<int, std::string> args);
+int discoverServers(std::pair<int, std::string> args);
 void *electionThread(void* args);
 
 int createSocket();
+int connectToServer(int socketId, std::string serverAddress, std::string serverPort, bool silent);
 int connectToServer(int socketId, std::string serverAddress, std::string serverPort);
 
 class ReplicaManager
@@ -46,9 +47,17 @@ class ReplicaManager
         ~ReplicaManager();
 
         bool isPrimary();
+        bool isPrimary(ReplicaManager rm);
 
         ReplicaManager* get_server(int port);
+        void warnExiting();
+        void disconnectServer(int port);
+        void addLiveServer(int port, std::string address);
         void loadReplicaManagers();
+        void startElection();
+        void startElection(int election_port);
+        void alertCoordinator(int election_port);
+        void setPrimary(int election_port);
         void setIp(std::string ip);
         void setPort(int port);
 
@@ -56,6 +65,7 @@ class ReplicaManager
         int getPort();
 
         int findPrimary();
+        bool electionInProgress;
 };
 
 #endif

@@ -14,6 +14,7 @@ void sigint_handler(int signum)
 
     interrupted = true;
     pfManager.saveProfiles();
+    rm.warnExiting();
 
     exit(signum);
 }
@@ -122,9 +123,6 @@ int main(int argc, char *argv[])
 
     Server server(port, maxConnections);
     // inicializa o replica manager com a porta fornecida
-    // TODO: habilitar quando parar de debugar
-    // como a leitura é bloqueante na thread, o processo só itera quando receber algo
-    //signal(SIGINT, sigint_handler);
     rm = ReplicaManager(port);
 
     pfManager.loadProfiles();
@@ -141,6 +139,7 @@ void *commandReceiverThread(void *args)
     int socketDescriptor = *((int *)args);
     int bytesRead, bytesWritten;
     bool login_failed = false;
+    bool exit_thread = false;
 
     Packet packet;
     Packet replyPacket;
@@ -157,9 +156,75 @@ void *commandReceiverThread(void *args)
 
             if ( packet.sequenceNumber == 69 )
             {
-                replyPacket = createPacket(COORDINATOR, 69, time(0), "");
-                std::cout << "Replying that I am coordinator to socket " << socketDescriptor << std::endl;
-                bytesWritten = Communication::sendPacket(socketDescriptor, replyPacket);
+                if ( packet.type == STATUS )
+                {
+                    if ( rm.isPrimary() )
+                    {
+                        replyPacket = createPacket(COORDINATOR, 69, time(0), std::to_string(rm.getPort()));
+                        std::cout << "Replying that I am coordinator to socket " << socketDescriptor << std::endl;
+                    }
+                    else
+                    {
+                        replyPacket = createPacket(NOT_COORDINATOR, 69, time(0), "");
+                        std::cout << "Replying that I am not coordinator to socket " << socketDescriptor << std::endl;
+                    }
+
+                    bytesWritten = Communication::sendPacket(socketDescriptor, replyPacket);
+
+                    // split text into ip and port
+                    std::string payload = packet.payload;
+                    int split = payload.find(":");
+                    std::string address = payload.substr(0, split);
+                    int port = atoi(payload.substr(split + 1).c_str());
+
+                    rm.addLiveServer(port, address);
+                    break;
+                }
+                else if ( packet.type == COORDINATOR )
+                {
+                    std::cout << "Received coordinator packet from socket " << socketDescriptor << std::endl;
+                    rm.setPrimary(atoi(packet.payload));
+                }
+                else if ( packet.type == ELECTION )
+                {
+                    int port = atoi(packet.payload);
+                    int election_port = 0;
+                    std::cout << "Election received from socket " << socketDescriptor << " with port " << port << std::endl;
+
+                    // recebeu a própria porta, então se declara primário
+                    if ( rm.getPort() == port )
+                    {
+                        std::cout << "Received own token, becoming coordinator..." << std::endl;
+                        election_port = -1;
+                    }
+                    else if ( rm.getPort() < port )
+                    {
+                        std::cout << "My own token has priority over the one received\n";
+                        election_port = rm.getPort();
+                    }
+                    else
+                    {
+                        election_port = port;
+                    }
+
+                    if ( election_port < 0 )
+                    {
+                        std::cout << "Alerting other servers that I am the new coordinator...\n";
+                        rm.alertCoordinator(rm.getPort());
+                    }
+                    else
+                    {
+                        std::cout << "Forwarding election with port " << election_port << std::endl;
+                        rm.startElection(election_port);
+                    }
+                }
+                else if ( packet.type == DISCONNECT )
+                {
+                    std::cout << "Disconnecting client " << socketDescriptor << " at port " << packet.payload << std::endl;
+                    rm.disconnectServer(atoi(packet.payload));
+                }
+
+                exit_thread = true;
                 break;
             }
             else
@@ -238,7 +303,7 @@ void *commandReceiverThread(void *args)
         }
     }
 
-    while (!interrupted && !login_failed)
+    while (!interrupted && !login_failed && !exit_thread)
     {
         bytesWritten = 0;
         bytesRead = 0;

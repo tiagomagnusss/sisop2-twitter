@@ -24,12 +24,12 @@ typedef enum
     SERVER_HALT,
     NOTIFICATION,
     STATUS,
+    DISCONNECT,
 
     // Eleição
     COORDINATOR,
     NOT_COORDINATOR,
-    ELECTION,
-    REPLY_ELECTION
+    ELECTION
 } PacketType;
 
 typedef struct _packet

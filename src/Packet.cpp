@@ -48,6 +48,9 @@ std::string getPacketTypeName(int type)
     case STATUS:
         return "STATUS";
         break;
+    case DISCONNECT:
+        return "DISCONNECT";
+        break;
     case REQUIRE_LOGIN:
         return "REQUIRE_LOGIN";
         break;
